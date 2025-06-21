@@ -1,1 +1,0 @@
-# MinWeb2025-event-management-system
