@@ -8,11 +8,14 @@ RUN apk add --no-cache git
 # go.modとgo.sumをコピー
 COPY go.mod go.sum ./
 
-# 依存関係をダウンロード
-RUN go mod download
+# 依存関係をダウンロードして整理
+RUN go mod download && go mod tidy
 
 # ソースコードをコピー
 COPY . .
+
+# 依存関係を再度整理（ソースコード追加後）
+RUN go mod tidy
 
 # アプリケーションをビルド
 RUN go build -o bin/api cmd/api/main.go
