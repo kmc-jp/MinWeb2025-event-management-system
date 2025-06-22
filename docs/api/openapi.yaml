@@ -1,258 +1,520 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
-  title: イベント管理システム API
-  description: イベント管理システムのRESTful API
-  version: 1.0.0
+  title: Circle Event Management System API
+  description: サークル内利用を想定したイベント管理システムのAPI
+  version: "1.0.0"
   contact:
     name: 開発チーム
     email: dev@example.com
 
 servers:
-  - url: http://localhost:8080
+  - url: http://localhost:8080/api/v1
     description: 開発環境
 
 paths:
   /events:
     get:
-      summary: イベント一覧を取得
-      operationId: getEvents
+      summary: List Events
+      operationId: listEvents
+      tags: [Events]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: page
           in: query
-          description: ページ番号
-          required: false
-          schema:
-            type: integer
-            default: 1
-        - name: limit
+          schema: { type: integer, default: 1 }
+        - name: pageSize
           in: query
-          description: 1ページあたりの件数
-          required: false
+          schema: { type: integer, default: 20 }
+        - name: statusFilter
+          in: query
           schema:
-            type: integer
-            default: 10
+            type: string
+            enum: [DRAFT, SCHEDULE_POLLING, CONFIRMED, FINISHED, CANCELLED]
+        - name: tagFilter
+          in: query
+          schema: { type: string }
       responses:
         "200":
-          description: 成功
+          description: A paginated list of events.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EventList"
+                $ref: "#/components/schemas/PaginatedEventSummary"
         "400":
           description: バリデーションエラー
+        "401":
+          description: 認証エラー
         "500":
           description: サーバーエラー
 
     post:
-      summary: 新しいイベントを作成
+      summary: Create a new Event
       operationId: createEvent
+      tags: [Events]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateEventRequest"
+              $ref: "#/components/schemas/CreateEventCommand"
       responses:
         "201":
-          description: イベント作成成功
+          description: Event created successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Event"
+                type: object
+                properties:
+                  eventId: { type: string, format: uuid }
         "400":
           description: バリデーションエラー
+        "401":
+          description: 認証エラー
         "500":
           description: サーバーエラー
 
   /events/{eventId}:
     get:
-      summary: イベント詳細を取得
-      operationId: getEvent
+      summary: Get Event Details
+      operationId: getEventDetails
+      tags: [Events]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: eventId
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: { type: string, format: uuid }
       responses:
         "200":
-          description: 成功
+          description: Detailed information for a single event.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Event"
+                $ref: "#/components/schemas/EventDetailsDTO"
         "404":
           description: イベントが見つかりません
+        "401":
+          description: 認証エラー
         "500":
           description: サーバーエラー
 
     put:
-      summary: イベントを更新
-      operationId: updateEvent
+      summary: Update Event Details
+      operationId: updateEventDetails
+      tags: [Events]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: eventId
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: { type: string, format: uuid }
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateEventRequest"
+              $ref: "#/components/schemas/UpdateEventDetailsCommand"
       responses:
         "200":
-          description: 更新成功
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Event"
+          description: Event updated successfully
         "400":
           description: バリデーションエラー
+        "401":
+          description: 認証エラー
         "404":
           description: イベントが見つかりません
         "500":
           description: サーバーエラー
 
-    delete:
-      summary: イベントを削除
-      operationId: deleteEvent
+  /events/{eventId}/publish:
+    post:
+      summary: Publish Event
+      operationId: publishEvent
+      tags: [Events]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: eventId
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: { type: string, format: uuid }
       responses:
-        "204":
-          description: 削除成功
+        "200":
+          description: Event published successfully
+        "400":
+          description: バリデーションエラー
+        "401":
+          description: 認証エラー
         "404":
           description: イベントが見つかりません
+        "500":
+          description: サーバーエラー
+
+  /events/{eventId}/cancel:
+    post:
+      summary: Cancel Event
+      operationId: cancelEvent
+      tags: [Events]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string }
+      responses:
+        "200":
+          description: Event cancelled successfully
+        "400":
+          description: バリデーションエラー
+        "401":
+          description: 認証エラー
+        "404":
+          description: イベントが見つかりません
+        "500":
+          description: サーバーエラー
+
+  /events/{eventId}/schedule-poll:
+    post:
+      summary: Respond to Schedule Poll
+      operationId: respondToPoll
+      tags: [Events]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RespondToPollCommand"
+      responses:
+        "200":
+          description: Poll response recorded successfully
+        "400":
+          description: バリデーションエラー
+        "401":
+          description: 認証エラー
+        "404":
+          description: イベントが見つかりません
+        "500":
+          description: サーバーエラー
+
+  /events/{eventId}/finalize-schedule:
+    post:
+      summary: Finalize Schedule
+      operationId: finalizeSchedule
+      tags: [Events]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                finalizedDate: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Schedule finalized successfully
+        "400":
+          description: バリデーションエラー
+        "401":
+          description: 認証エラー
+        "404":
+          description: イベントが見つかりません
+        "500":
+          description: サーバーエラー
+
+  /events/{eventId}/register:
+    post:
+      summary: Register for an Event
+      operationId: registerForEvent
+      tags: [Registrations]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  registrationId: { type: string, format: uuid }
+        "400":
+          description: バリデーションエラー
+        "401":
+          description: 認証エラー
+        "404":
+          description: イベントが見つかりません
+        "409":
+          description: 既に登録済みです
+        "500":
+          description: サーバーエラー
+
+  /registrations/{registrationId}/cancel:
+    post:
+      summary: Cancel Registration
+      operationId: cancelRegistration
+      tags: [Registrations]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: registrationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Registration cancelled successfully
+        "400":
+          description: バリデーションエラー
+        "401":
+          description: 認証エラー
+        "404":
+          description: 登録が見つかりません
+        "500":
+          description: サーバーエラー
+
+  /my/events:
+    get:
+      summary: List My Events
+      operationId: listMyEvents
+      tags: [My Events]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        "200":
+          description: A paginated list of user's events.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedEventSummary"
+        "401":
+          description: 認証エラー
         "500":
           description: サーバーエラー
 
 components:
   schemas:
-    Event:
+    # --- Commands ---
+    CreateEventCommand:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-          description: イベントID
-        name:
-          type: string
-          description: イベント名
-        description:
-          type: string
-          description: イベントの説明
-        startDate:
-          type: string
-          format: date-time
-          description: 開始日時
-        endDate:
-          type: string
-          format: date-time
-          description: 終了日時
-        status:
-          type: string
-          enum: [draft, published, cancelled, completed]
-          description: イベントのステータス
-        createdAt:
-          type: string
-          format: date-time
-          description: 作成日時
-        updatedAt:
-          type: string
-          format: date-time
-          description: 更新日時
-      required:
-        - id
-        - name
-        - startDate
-        - endDate
-        - status
+        title: { type: string, example: "新歓合宿" }
+        description: { type: string, example: "春の新歓合宿です！" }
+        venue: { type: string, example: "奥多摩" }
+        allowedRoles:
+          type: array
+          items:
+            {
+              type: string,
+              enum: [CircleAdmin, RegularMember, Alumni, External],
+            }
+        tags:
+          type: array
+          items: { type: string }
+        feeSettings:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeeSettingInput"
+        pollCandidates:
+          type: array
+          items: { type: string, format: "date-time" }
+      required: [title]
 
-    EventList:
+    UpdateEventDetailsCommand:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        venue: { type: string }
+        allowedRoles:
+          type: array
+          items:
+            {
+              type: string,
+              enum: [CircleAdmin, RegularMember, Alumni, External],
+            }
+        tags:
+          type: array
+          items: { type: string }
+        feeSettings:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeeSettingInput"
+
+    RespondToPollCommand:
+      type: object
+      properties:
+        responses:
+          type: array
+          items:
+            type: object
+            properties:
+              date: { type: string, format: "date-time" }
+              available: { type: boolean }
+      required: [responses]
+
+    FeeSettingInput:
+      type: object
+      properties:
+        applicableRole: { type: string }
+        applicableGeneration: { type: string, nullable: true }
+        fee: { $ref: "#/components/schemas/Money" }
+
+    # --- DTOs ---
+    EventSummaryDTO:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        finalizedDate: { type: string, format: date-time, nullable: true }
+        status: { $ref: "#/components/schemas/EventStatus" }
+        organizerName: { type: string }
+
+    EventDetailsDTO:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string }
+        status: { $ref: "#/components/schemas/EventStatus" }
+        organizer: { $ref: "#/components/schemas/UserSummaryDTO" }
+        schedulePoll: { $ref: "#/components/schemas/SchedulePollDTO" }
+        feeSettings:
+          type: array
+          items: { $ref: "#/components/schemas/FeeSettingDTO" }
+        venue: { type: string }
+        allowedRoles:
+          type: array
+          items:
+            {
+              type: string,
+              enum: [CircleAdmin, RegularMember, Alumni, External],
+            }
+        tags:
+          type: array
+          items: { type: string }
+        registrations:
+          type: array
+          items: { $ref: "#/components/schemas/RegistrationDTO" }
+
+    UserSummaryDTO:
+      type: object
+      properties:
+        userId: { type: string }
+        name: { type: string }
+        generation: { type: string }
+
+    SchedulePollDTO:
+      type: object
+      properties:
+        pollId: { type: string }
+        pollType: { type: string }
+        candidateDates:
+          { type: array, items: { type: string, format: "date-time" } }
+        responses:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/PollResponseDTO" },
+          }
+
+    PollResponseDTO:
+      type: object
+      properties:
+        userId: { type: string }
+        userName: { type: string }
+        responses:
+          type: array
+          items:
+            type: object
+            properties:
+              date: { type: string, format: "date-time" }
+              available: { type: boolean }
+
+    FeeSettingDTO:
+      type: object
+      properties:
+        applicableRole: { type: string }
+        applicableGeneration: { type: string, nullable: true }
+        fee: { $ref: "#/components/schemas/Money" }
+
+    RegistrationDTO:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string }
+        userName: { type: string }
+        status: { $ref: "#/components/schemas/RegistrationStatus" }
+        appliedFee: { $ref: "#/components/schemas/Money" }
+        registeredAt: { type: string, format: date-time }
+
+    PaginatedEventSummary:
       type: object
       properties:
         events:
           type: array
-          items:
-            $ref: "#/components/schemas/Event"
+          items: { $ref: "#/components/schemas/EventSummaryDTO" }
         pagination:
           $ref: "#/components/schemas/Pagination"
-
-    CreateEventRequest:
-      type: object
-      properties:
-        name:
-          type: string
-          description: イベント名
-        description:
-          type: string
-          description: イベントの説明
-        startDate:
-          type: string
-          format: date-time
-          description: 開始日時
-        endDate:
-          type: string
-          format: date-time
-          description: 終了日時
-      required:
-        - name
-        - startDate
-        - endDate
-
-    UpdateEventRequest:
-      type: object
-      properties:
-        name:
-          type: string
-          description: イベント名
-        description:
-          type: string
-          description: イベントの説明
-        startDate:
-          type: string
-          format: date-time
-          description: 開始日時
-        endDate:
-          type: string
-          format: date-time
-          description: 終了日時
-        status:
-          type: string
-          enum: [draft, published, cancelled, completed]
-          description: イベントのステータス
 
     Pagination:
       type: object
       properties:
-        page:
-          type: integer
-          description: 現在のページ番号
-        limit:
-          type: integer
-          description: 1ページあたりの件数
-        total:
-          type: integer
-          description: 総件数
-        totalPages:
-          type: integer
-          description: 総ページ数
+        page: { type: integer }
+        pageSize: { type: integer }
+        total: { type: integer }
+        totalPages: { type: integer }
+
+    # --- Value Objects & Common ---
+    Money:
+      type: object
+      properties:
+        amount: { type: integer }
+        currency: { type: string, default: "JPY" }
+
+    EventStatus:
+      type: string
+      enum: [DRAFT, SCHEDULE_POLLING, CONFIRMED, FINISHED, CANCELLED]
+
+    RegistrationStatus:
+      type: string
+      enum: [REGISTERED, CANCELLED]
 
     Error:
       type: object
       properties:
-        message:
-          type: string
-          description: エラーメッセージ
-        code:
-          type: string
-          description: エラーコード
+        message: { type: string }
+        code: { type: string }
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

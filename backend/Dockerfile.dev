@@ -8,17 +8,17 @@ RUN apk add --no-cache git
 # go.modとgo.sumをコピー
 COPY go.mod go.sum ./
 
-# 依存関係をダウンロード
-RUN go mod download
+# 依存関係をダウンロードしてvendorディレクトリを作成
+RUN go mod download && go mod vendor
 
 # ソースコードをコピー
 COPY . .
 
-# アプリケーションをビルド
-RUN go build -o bin/api cmd/api/main.go
+# アプリケーションをビルド（vendorディレクトリを使用）
+RUN go build -mod=vendor -o bin/api cmd/api/main.go
 
 # ポート8080を公開
 EXPOSE 8080
 
 # アプリケーションを実行
-CMD ["go", "run", "cmd/api/main.go"] 
+CMD ["go", "run", "-mod=vendor", "cmd/api/main.go"] 
