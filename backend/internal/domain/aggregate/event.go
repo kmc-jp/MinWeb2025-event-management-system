@@ -3,21 +3,22 @@ package aggregate
 import (
 	"time"
 
-	"github.com/google/uuid"
 	"event-management-system/backend/internal/domain"
+
+	"github.com/google/uuid"
 )
 
 // Event はイベント集約を表します
 // DDDの集約パターンに従い、ビジネスルールと不変条件をカプセル化します
 type Event struct {
-	ID          string
-	Name        string
-	Description string
-	StartDate   time.Time
-	EndDate     time.Time
-	Status      EventStatus
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID          string      `json:"id"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	StartDate   time.Time   `json:"start_date"`
+	EndDate     time.Time   `json:"end_date"`
+	Status      EventStatus `json:"status"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at"`
 }
 
 // EventStatus はイベントのステータスを表す値オブジェクトです
@@ -30,13 +31,29 @@ const (
 	EventStatusCompleted EventStatus = "completed"
 )
 
+// MarshalJSON はEventStatusをJSONに変換します
+func (s EventStatus) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + s + `"`), nil
+}
+
+// UnmarshalJSON はJSONからEventStatusに変換します
+func (s *EventStatus) UnmarshalJSON(data []byte) error {
+	// ダブルクォートを除去
+	status := string(data)
+	if len(status) >= 2 && status[0] == '"' && status[len(status)-1] == '"' {
+		status = status[1 : len(status)-1]
+	}
+	*s = EventStatus(status)
+	return nil
+}
+
 // NewEvent は新しいイベントを作成します
 // ファクトリーパターンを使用して、適切な初期状態のイベントを生成します
 func NewEvent(name, description string, startDate, endDate time.Time) (*Event, error) {
 	if name == "" {
 		return nil, domain.ErrEventNameRequired
 	}
-	
+
 	if startDate.After(endDate) {
 		return nil, domain.ErrInvalidEventDates
 	}
@@ -60,7 +77,7 @@ func (e *Event) Publish() error {
 	if e.Status != EventStatusDraft {
 		return domain.ErrEventCannotBePublished
 	}
-	
+
 	if time.Now().After(e.StartDate) {
 		return domain.ErrEventCannotBePublishedAfterStart
 	}
@@ -86,7 +103,7 @@ func (e *Event) UpdateDetails(name, description string, startDate, endDate time.
 	if name == "" {
 		return domain.ErrEventNameRequired
 	}
-	
+
 	if startDate.After(endDate) {
 		return domain.ErrInvalidEventDates
 	}
@@ -97,4 +114,4 @@ func (e *Event) UpdateDetails(name, description string, startDate, endDate time.
 	e.EndDate = endDate
 	e.UpdatedAt = time.Now()
 	return nil
-} 
+}

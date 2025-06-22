@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"log"
 	"net/http"
+	"os"
 
 	"event-management-system/backend/internal/application/command"
 	"event-management-system/backend/internal/infrastructure/repository"
@@ -20,7 +22,22 @@ func main() {
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
 
-	eventRepo := repository.NewMemoryEventRepository()
+	// リポジトリの初期化
+	var eventRepo repository.EventRepository
+	var err error
+
+	// 環境変数に基づいてリポジトリを選択
+	if os.Getenv("USE_MYSQL") == "true" {
+		log.Println("Using MySQL repository")
+		eventRepo, err = repository.NewMySQLEventRepository()
+		if err != nil {
+			log.Fatalf("Failed to initialize MySQL repository: %v", err)
+		}
+	} else {
+		log.Println("Using memory repository")
+		eventRepo = repository.NewMemoryEventRepository()
+	}
+
 	createHandler := command.NewCreateEventCommandHandler(eventRepo)
 
 	// ルートを設定
@@ -45,4 +62,4 @@ func main() {
 
 	// サーバーを起動
 	e.Logger.Fatal(e.Start(":8080"))
-} 
+}
