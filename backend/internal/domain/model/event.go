@@ -1,6 +1,7 @@
 package model
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -26,11 +27,10 @@ type Money struct {
 	Currency string // 通貨（例: "JPY"）
 }
 
-// FeeSetting: 役割・世代ごとの料金ルール
+// FeeSetting: 世代ごとの料金ルール
 
 type FeeSetting struct {
-	ApplicableRole       UserRole
-	ApplicableGeneration string
+	ApplicableGeneration int64
 	Fee                  Money
 }
 
@@ -62,6 +62,22 @@ type EventReport struct {
 // Tag: タグ
 
 type Tag string
+
+// TagEntity はタグ管理用のエンティティです
+type TagEntity struct {
+	Name      string
+	CreatedAt time.Time
+	CreatedBy string
+}
+
+// NewTagEntity は新しいタグエンティティを作成します
+func NewTagEntity(name, createdBy string) *TagEntity {
+	return &TagEntity{
+		Name:      name,
+		CreatedAt: time.Now(),
+		CreatedBy: createdBy,
+	}
+}
 
 // Event: イベント集約
 
@@ -166,8 +182,14 @@ func (e *Event) AddComment(userID, content string) {
 }
 
 func (e *Event) GetApplicableFee(user *User) *Money {
+	// ユーザーの世代を整数に変換
+	userGeneration, err := strconv.ParseInt(user.Generation, 10, 64)
+	if err != nil {
+		return nil
+	}
+
 	for _, fs := range e.FeeSettings {
-		if fs.ApplicableRole == user.Role && fs.ApplicableGeneration == user.Generation {
+		if fs.ApplicableGeneration == userGeneration {
 			return &fs.Fee
 		}
 	}

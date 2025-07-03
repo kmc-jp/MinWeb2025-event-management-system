@@ -44,7 +44,6 @@ paths:
           schema:
             type: integer
             default: 20
-            minimum: 1
             maximum: 100
         - name: status
           in: query
@@ -194,6 +193,342 @@ paths:
                 $ref: "#/components/schemas/User"
         "404":
           description: ユーザーが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/roles:
+    get:
+      summary: 利用可能な役割一覧を取得
+      operationId: listRoles
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Role"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    post:
+      summary: 新しい役割を作成
+      operationId: createRole
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRoleRequest"
+      responses:
+        "201":
+          description: 役割作成成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Role"
+        "400":
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: 認証エラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 役割が既に存在します
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/tags:
+    get:
+      summary: タグ一覧を取得
+      operationId: listTags
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tag"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    post:
+      summary: 新しいタグを作成
+      operationId: createTag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTagRequest"
+      responses:
+        "201":
+          description: タグ作成成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+        "400":
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: タグが既に存在します
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/roles/{role_name}:
+    get:
+      summary: 役割詳細を取得
+      operationId: getRoleDetails
+      parameters:
+        - name: role_name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleDetails"
+        "404":
+          description: 役割が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    put:
+      summary: 役割を更新
+      operationId: updateRole
+      parameters:
+        - name: role_name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRoleRequest"
+      responses:
+        "200":
+          description: 役割更新成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Role"
+        "400":
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: 認証エラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 役割が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      summary: 役割を削除
+      operationId: deleteRole
+      parameters:
+        - name: role_name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: 役割削除成功
+        "400":
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: 認証エラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 役割が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/users/{user_id}/roles:
+    post:
+      summary: ユーザーに役割を付与
+      operationId: assignRoleToUser
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignRoleRequest"
+      responses:
+        "200":
+          description: 役割付与成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: 認証エラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: ユーザーまたは役割が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      summary: ユーザーから役割を削除
+      operationId: removeRoleFromUser
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: role_name
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 役割削除成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: 認証エラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: ユーザーまたは役割が見つかりません
           content:
             application/json:
               schema:
@@ -380,35 +715,165 @@ components:
         name:
           type: string
           description: ユーザー名
-        role:
-          $ref: "#/components/schemas/UserRole"
+        roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserRole"
+          description: ユーザーの役割リスト
         generation:
           type: string
           description: 世代（例 "2023", "2024"）
       required:
         - user_id
         - name
-        - role
+        - roles
         - generation
 
     UserRole:
       type: string
-      enum: [CircleAdmin, RegularMember, Alumni, External]
       description: ユーザーの役割
+
+    Role:
+      type: object
+      properties:
+        name:
+          type: string
+          description: 役割名
+        description:
+          type: string
+          description: 役割の説明
+        created_at:
+          type: string
+          format: date-time
+          description: 作成日時
+        created_by:
+          type: string
+          description: 作成者ID
+      required:
+        - name
+        - description
+        - created_at
+        - created_by
+
+    CreateRoleRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: 役割名
+          minLength: 1
+          maxLength: 50
+        description:
+          type: string
+          description: 役割の説明
+          maxLength: 200
+      required:
+        - name
+        - description
+
+    AssignRoleRequest:
+      type: object
+      properties:
+        role_name:
+          type: string
+          description: 付与する役割名
+      required:
+        - role_name
+
+    UpdateRoleRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          description: 役割の説明
+          maxLength: 200
+      required:
+        - description
+
+    RoleDetails:
+      type: object
+      properties:
+        name:
+          type: string
+          description: 役割名
+        description:
+          type: string
+          description: 役割の説明
+        created_at:
+          type: string
+          format: date-time
+          description: 作成日時
+        created_by:
+          type: string
+          description: 作成者ID
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserSummary"
+          description: この役割を持つユーザー一覧
+      required:
+        - name
+        - description
+        - created_at
+        - created_by
+        - users
+
+    UserSummary:
+      type: object
+      properties:
+        user_id:
+          type: string
+          description: ユーザーID
+        name:
+          type: string
+          description: ユーザー名
+        generation:
+          type: string
+          description: 世代
+      required:
+        - user_id
+        - name
+        - generation
+
+    Tag:
+      type: object
+      properties:
+        name:
+          type: string
+          description: タグ名
+        created_at:
+          type: string
+          format: date-time
+          description: 作成日時
+        created_by:
+          type: string
+          description: 作成者ID
+      required:
+        - name
+        - created_at
+        - created_by
+
+    CreateTagRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: タグ名
+          maxLength: 50
+      required:
+        - name
 
     # 料金設定
     FeeSetting:
       type: object
       properties:
-        applicable_role:
-          $ref: "#/components/schemas/UserRole"
         applicable_generation:
-          type: string
-          description: 適用世代
+          type: integer
+          description: "適用世代（例: 2023, 2024）"
         fee:
           $ref: "#/components/schemas/Money"
       required:
-        - applicable_role
+        - applicable_generation
         - fee
 
     Money:

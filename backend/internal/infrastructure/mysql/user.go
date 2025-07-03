@@ -18,14 +18,13 @@ func NewMySQLUserRepository(db *sql.DB) *MySQLUserRepository {
 
 // FindByID は指定されたIDのユーザーを取得
 func (r *MySQLUserRepository) FindByID(ctx context.Context, userID string) (*model.User, error) {
-	query := "SELECT user_id, name, role, generation FROM users WHERE user_id = ?"
+	query := "SELECT user_id, name, generation FROM users WHERE user_id = ?"
 
 	row := r.db.QueryRowContext(ctx, query, userID)
 
 	var user model.User
-	var roleStr string
 
-	err := row.Scan(&user.UserID, &user.Name, &roleStr, &user.Generation)
+	err := row.Scan(&user.UserID, &user.Name, &user.Generation)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, ErrUserNotFound
@@ -33,28 +32,70 @@ func (r *MySQLUserRepository) FindByID(ctx context.Context, userID string) (*mod
 		return nil, err
 	}
 
-	user.Role = model.UserRole(roleStr)
+	// ユーザーの役割を取得
+	rolesQuery := "SELECT role FROM user_roles WHERE user_id = ?"
+	rows, err := r.db.QueryContext(ctx, rolesQuery, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var roles []model.UserRole
+	for rows.Next() {
+		var roleStr string
+		if err := rows.Scan(&roleStr); err != nil {
+			return nil, err
+		}
+		roles = append(roles, model.UserRole(roleStr))
+	}
+
+	user.Roles = roles
 	return &user, nil
 }
 
 // Save はユーザー情報を保存または更新
 func (r *MySQLUserRepository) Save(ctx context.Context, user *model.User) error {
+	// トランザクション開始
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// ユーザー基本情報を保存
 	query := `
-		INSERT INTO users (user_id, name, role, generation)
-		VALUES (?, ?, ?, ?)
+		INSERT INTO users (user_id, name, generation)
+		VALUES (?, ?, ?)
 		ON DUPLICATE KEY UPDATE
 		name = VALUES(name),
-		role = VALUES(role),
 		generation = VALUES(generation)
 	`
 
-	_, err := r.db.ExecContext(ctx, query,
+	_, err = tx.ExecContext(ctx, query,
 		user.UserID,
 		user.Name,
-		string(user.Role),
 		user.Generation,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// 既存の役割を削除
+	_, err = tx.ExecContext(ctx, "DELETE FROM user_roles WHERE user_id = ?", user.UserID)
+	if err != nil {
+		return err
+	}
+
+	// 新しい役割を挿入
+	for _, role := range user.Roles {
+		_, err := tx.ExecContext(ctx, "INSERT INTO user_roles (user_id, role) VALUES (?, ?)", user.UserID, string(role))
+		if err != nil {
+			return err
+		}
+	}
+
+	// トランザクションコミット
+	return tx.Commit()
 }
 
 // ErrUserNotFound はユーザーが見つからないエラー

@@ -54,15 +54,23 @@ func main() {
 	// インフラストラクチャ層の初期化
 	eventRepo := mysql.NewMySQLEventRepositoryWithDB(db)
 	userRepo := mysql.NewMySQLUserRepository(db)
+	roleRepo := mysql.NewMySQLRoleRepository(db)
+	tagRepo := mysql.NewMySQLTagRepository(db)
 
 	// ユースケース層の初期化
 	eventCommandUsecase := command.NewEventCommandUsecase(eventRepo, userRepo)
 	eventQueryUsecase := query.NewEventQueryUsecase(eventRepo)
 	userQueryUsecase := query.NewUserQueryUsecase(userRepo)
+	roleCommandUsecase := command.NewRoleCommandUsecase(roleRepo, userRepo)
+	roleQueryUsecase := query.NewRoleQueryUsecase(roleRepo)
+	tagCommandUsecase := command.NewTagCommandUsecase(tagRepo)
+	tagQueryUsecase := query.NewTagQueryUsecase(tagRepo)
 
 	// HTTPハンドラの初期化
 	eventHandler := http.NewEventHandler(eventCommandUsecase, eventQueryUsecase)
 	userHandler := http.NewUserHandler(userQueryUsecase)
+	roleHandler := http.NewRoleHandler(roleCommandUsecase, roleQueryUsecase, userQueryUsecase)
+	tagHandler := http.NewTagHandler(tagCommandUsecase, tagQueryUsecase)
 
 	// Ginルーターの設定
 	r := gin.Default()
@@ -88,6 +96,8 @@ func main() {
 	// ルートの登録
 	eventHandler.RegisterRoutes(r)
 	userHandler.RegisterRoutes(r)
+	roleHandler.RegisterRoutes(r)
+	tagHandler.RegisterRoutes(r)
 
 	// ヘルスチェックエンドポイント
 	r.GET("/health", func(c *gin.Context) {
