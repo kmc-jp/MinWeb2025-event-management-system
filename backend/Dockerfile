@@ -7,6 +7,9 @@ RUN apk add --no-cache git
 COPY go.mod go.sum ./
 RUN go mod download
 
+# vendorディレクトリをコピー（存在する場合）
+COPY vendor/ ./vendor/
+
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o bin/api cmd/main.go
 
