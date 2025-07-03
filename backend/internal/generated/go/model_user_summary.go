@@ -10,7 +10,7 @@
 
 package generated
 
-type User struct {
+type UserSummary struct {
 
 	// ユーザーID
 	UserId string `json:"user_id"`
@@ -18,9 +18,6 @@ type User struct {
 	// ユーザー名
 	Name string `json:"name"`
 
-	// ユーザーの役割リスト
-	Roles []string `json:"roles"`
-
-	// 世代（例 \"2023\", \"2024\"）
+	// 世代
 	Generation string `json:"generation"`
 }

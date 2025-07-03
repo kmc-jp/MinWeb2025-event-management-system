@@ -36,7 +36,134 @@ class MockApiClient {
       data: {
         user_id: this.mockUser.user_id,
         name: this.mockUser.name,
-        role: this.mockUser.role,
+        roles: this.mockUser.roles,
+        generation: this.mockUser.generation,
+      }
+    };
+  }
+
+  // 役割一覧を取得（Mock）
+  async listRoles() {
+    return {
+      data: [
+        {
+          name: 'admin',
+          description: 'システム管理者',
+          created_at: '2023-01-01T00:00:00Z',
+          created_by: 'system'
+        },
+        {
+          name: 'member',
+          description: '一般部員',
+          created_at: '2023-01-01T00:00:00Z',
+          created_by: 'system'
+        }
+      ]
+    };
+  }
+
+  // 役割詳細を取得（Mock）
+  async getRoleDetails(roleName: string) {
+    const mockUsers = [
+      { user_id: 'admin1', name: 'Admin User', generation: '2023' },
+      { user_id: 'member1', name: 'Member User 1', generation: '2023' },
+      { user_id: 'member2', name: 'Member User 2', generation: '2024' }
+    ];
+
+    return {
+      data: {
+        name: roleName,
+        description: roleName === 'admin' ? 'システム管理者' : '一般部員',
+        created_at: '2023-01-01T00:00:00Z',
+        created_by: 'system',
+        users: roleName === 'admin' ? [mockUsers[0]] : mockUsers.slice(1)
+      }
+    };
+  }
+
+  // 役割を更新（Mock）
+  async updateRole(roleName: string, roleData: { description: string }) {
+    return {
+      data: {
+        name: roleName,
+        description: roleData.description,
+        created_at: '2023-01-01T00:00:00Z',
+        created_by: 'system'
+      }
+    };
+  }
+
+  // タグ一覧を取得（Mock）
+  async listTags() {
+    return {
+      data: [
+        { name: '技術勉強会', created_at: '2023-01-01T00:00:00Z', created_by: 'system' },
+        { name: '懇親会', created_at: '2023-01-01T00:00:00Z', created_by: 'system' },
+        { name: 'ハッカソン', created_at: '2023-01-01T00:00:00Z', created_by: 'system' },
+        { name: 'LT会', created_at: '2023-01-01T00:00:00Z', created_by: 'system' },
+        { name: 'ワークショップ', created_at: '2023-01-01T00:00:00Z', created_by: 'system' }
+      ]
+    };
+  }
+
+  // 新しいタグを作成（Mock）
+  async createTag(tagData: { name: string }) {
+    return {
+      data: {
+        name: tagData.name,
+        created_at: '2023-01-01T00:00:00Z',
+        created_by: 'system'
+      }
+    };
+  }
+
+  // 新しい役割を作成（Mock）
+  async createRole(roleData: { name: string; description: string }) {
+    return {
+      data: {
+        name: roleData.name,
+        description: roleData.description,
+        created_at: new Date().toISOString(),
+        created_by: this.mockUser?.user_id || 'unknown'
+      }
+    };
+  }
+
+  // 役割を削除（Mock）
+  async deleteRole(roleName: string) {
+    // Mock実装では何もしない
+    return { data: undefined };
+  }
+
+  // ユーザーに役割を付与（Mock）
+  async assignRoleToUser(userId: string, roleName: string) {
+    // Mock実装では現在のユーザー情報を返す
+    if (!this.mockUser) {
+      throw new Error('ユーザーが認証されていません');
+    }
+
+    return {
+      data: {
+        user_id: this.mockUser.user_id,
+        name: this.mockUser.name,
+        roles: [...this.mockUser.roles, roleName as any],
+        generation: this.mockUser.generation,
+      }
+    };
+  }
+
+  // ユーザーから役割を削除（Mock）
+  async removeRoleFromUser(userId: string, roleName: string) {
+    // Mock実装では現在のユーザー情報を返す
+    if (!this.mockUser) {
+      throw new Error('ユーザーが認証されていません');
+    }
+
+    return {
+      data: {
+        user_id: this.mockUser.user_id,
+        name: this.mockUser.name,
+        roles: this.mockUser.roles.filter((role: string) => role !== roleName),
         generation: this.mockUser.generation,
       }
     };
@@ -54,7 +181,7 @@ class MockApiClient {
         data: {
           user_id: this.mockUser.user_id,
           name: this.mockUser.name,
-          role: this.mockUser.role,
+          roles: this.mockUser.roles,
           generation: this.mockUser.generation,
         }
       };
@@ -105,7 +232,7 @@ class MockApiClient {
       title: 'Mock Event',
       description: 'This is a mock event for development',
       venue: 'Mock Venue',
-      allowed_roles: ['CircleAdmin', 'RegularMember', 'Alumni', 'External'] as UserRole[],
+      allowed_roles: ['Member'],
       tags: ['mock', 'development'],
       fee_settings: [],
       poll_type: 'date_select',

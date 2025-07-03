@@ -8,10 +8,10 @@ import (
 
 // UserDTO はユーザー表示用のDTO
 type UserDTO struct {
-	UserID     string         `json:"user_id"`
-	Name       string         `json:"name"`
-	Role       model.UserRole `json:"role"`
-	Generation string         `json:"generation"`
+	UserID     string           `json:"user_id"`
+	Name       string           `json:"name"`
+	Roles      []model.UserRole `json:"roles"`
+	Generation string           `json:"generation"`
 }
 
 // UserQueryUsecase はユーザークエリのユースケース
@@ -34,7 +34,7 @@ func (uc *UserQueryUsecase) GetUser(ctx context.Context, userID string) (*UserDT
 	return &UserDTO{
 		UserID:     user.UserID,
 		Name:       user.Name,
-		Role:       user.Role,
+		Roles:      user.Roles,
 		Generation: user.Generation,
 	}, nil
 }

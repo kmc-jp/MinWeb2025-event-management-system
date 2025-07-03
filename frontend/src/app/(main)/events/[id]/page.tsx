@@ -23,7 +23,10 @@ export default function EventDetailPage() {
       setLoading(true);
       const apiClient = getApiClient();
       const response = await apiClient.getEventDetails(eventId);
-      setEvent(response.data);
+      if (response.data && 'allowed_roles' in response.data && Array.isArray(response.data.allowed_roles)) {
+        response.data.allowed_roles = response.data.allowed_roles.filter(role => role === 'member');
+      }
+      setEvent(response.data as EventDetails);
     } catch (error) {
       setError(handleApiError(error));
     } finally {
@@ -216,7 +219,6 @@ export default function EventDetailPage() {
                     {event.fee_settings.map((feeSetting, index) => (
                       <div key={index} className="flex justify-between items-center p-3 bg-kmc-gray-50 rounded-lg">
                         <div>
-                          <span className="font-medium">{feeSetting.applicable_role}</span>
                           {feeSetting.applicable_generation && (
                             <span className="text-sm text-kmc-gray-600 ml-2">
                               ({feeSetting.applicable_generation}期)

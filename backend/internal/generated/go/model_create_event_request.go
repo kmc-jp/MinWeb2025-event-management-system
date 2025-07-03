@@ -26,7 +26,7 @@ type CreateEventRequest struct {
 	Venue string `json:"venue,omitempty"`
 
 	// 参加可能な役割
-	AllowedRoles []UserRole `json:"allowed_roles"`
+	AllowedRoles []string `json:"allowed_roles"`
 
 	// タグ
 	Tags []string `json:"tags,omitempty"`

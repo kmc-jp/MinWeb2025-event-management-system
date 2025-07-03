@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getApiClient, handleApiError } from '../../../../lib/api';
-import { CreateEventRequest, UserRole, FeeSetting, Money } from '../../../../generated';
+import { CreateEventRequest, UserRole, FeeSetting, Money } from '../../../../generated/api';
 
 export default function CreateEventPage() {
   const router = useRouter();
@@ -22,15 +22,27 @@ export default function CreateEventPage() {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [availableTags, setAvailableTags] = useState<any[]>([]);
   const [newTag, setNewTag] = useState('');
   const [newPollCandidate, setNewPollCandidate] = useState('');
 
-  const userRoles: UserRole[] = ['CircleAdmin', 'RegularMember', 'Alumni', 'External'];
+  useEffect(() => {
+    loadTags();
+  }, []);
+
+  const loadTags = async () => {
+    try {
+      const response = await (getApiClient() as any).listTags();
+      setAvailableTags(response.data);
+    } catch (err) {
+      console.error('Failed to load tags:', err);
+    }
+  };
+
+  const userRoles: UserRole[] = ['member', 'admin'];
   const userRoleLabels: { [key in UserRole]: string } = {
-    CircleAdmin: '運営',
-    RegularMember: '一般部員',
-    Alumni: 'OB・OG',
-    External: '外部の方',
+    'member': '部員',
+    'admin': '管理者',
   };
 
   const handleInputChange = (field: keyof CreateEventRequest, value: any) => {
@@ -56,6 +68,27 @@ export default function CreateEventPage() {
         tags: [...(prev.tags || []), newTag.trim()]
       }));
       setNewTag('');
+    }
+  };
+
+  const createAndAddTag = async () => {
+    if (newTag.trim() && !formData.tags?.includes(newTag.trim())) {
+      try {
+        // 新しいタグを作成
+        await (getApiClient() as any).createTag({ name: newTag.trim() });
+        // タグ一覧を再読み込み
+        await loadTags();
+        // フォームに追加
+        setFormData(prev => ({
+          ...prev,
+          tags: [...(prev.tags || []), newTag.trim()]
+        }));
+        setNewTag('');
+      } catch (err) {
+        console.error('Failed to create tag:', err);
+        // 作成に失敗した場合は既存のタグとして追加
+        addTag();
+      }
     }
   };
 
@@ -85,8 +118,7 @@ export default function CreateEventPage() {
 
   const addFeeSetting = () => {
     const newFeeSetting: FeeSetting = {
-      applicable_role: 'RegularMember',
-      applicable_generation: '',
+      applicable_generation: 2024,
       fee: {
         amount: 0,
         currency: 'JPY'
@@ -101,7 +133,7 @@ export default function CreateEventPage() {
   const updateFeeSetting = (index: number, field: keyof FeeSetting, value: any) => {
     setFormData(prev => ({
       ...prev,
-      fee_settings: prev.fee_settings?.map((setting, i) => 
+      fee_settings: prev.fee_settings?.map((setting, i) =>
         i === index ? { ...setting, [field]: value } : setting
       ) || []
     }));
@@ -227,40 +259,87 @@ export default function CreateEventPage() {
             <div className="mb-8">
               <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">タグ</h2>
               <div className="space-y-4">
+                {/* 既存タグの選択 */}
+                {availableTags.length > 0 && (
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-kmc-gray-600 mb-2">
+                      既存のタグから選択
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {availableTags.map((tag) => (
+                        <button
+                          key={tag.name}
+                          type="button"
+                          onClick={() => {
+                            if (!formData.tags?.includes(tag.name)) {
+                              setFormData(prev => ({
+                                ...prev,
+                                tags: [...(prev.tags || []), tag.name]
+                              }));
+                            }
+                          }}
+                          disabled={formData.tags?.includes(tag.name)}
+                          className={`px-3 py-1 rounded-full text-sm border ${
+                            formData.tags?.includes(tag.name)
+                              ? 'bg-kmc-500 text-white border-kmc-500'
+                              : 'bg-white text-kmc-700 border-kmc-300 hover:bg-kmc-50'
+                          }`}
+                        >
+                          {tag.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* 新規タグ作成 */}
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="新しいタグを入力"
+                    placeholder="新しいタグを作成"
                     className="input-field flex-1"
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        createAndAddTag();
+                      }
+                    }}
                   />
                   <button
                     type="button"
-                    onClick={addTag}
-                    className="btn-secondary"
+                    onClick={createAndAddTag}
+                    className="btn-primary"
+                    disabled={!newTag.trim()}
                   >
-                    追加
+                    作成
                   </button>
                 </div>
+                
+                {/* 選択されたタグの表示 */}
                 {formData.tags && formData.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {formData.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-kmc-100 text-kmc-700"
-                      >
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => removeTag(tag)}
-                          className="ml-2 text-kmc-500 hover:text-kmc-700"
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-kmc-gray-600 mb-2">
+                      選択されたタグ
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-kmc-100 text-kmc-800"
                         >
-                          ×
-                        </button>
-                      </span>
-                    ))}
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => removeTag(tag)}
+                            className="ml-2 text-kmc-600 hover:text-kmc-800"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -347,29 +426,14 @@ export default function CreateEventPage() {
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-kmc-gray-700 mb-2">
-                            役割
-                          </label>
-                          <select
-                            value={feeSetting.applicable_role}
-                            onChange={(e) => updateFeeSetting(index, 'applicable_role', e.target.value as UserRole)}
-                            className="input-field w-full"
-                          >
-                            {userRoles.map((role) => (
-                              <option key={role} value={role}>{userRoleLabels[role]}</option>
-                            ))}
-                          </select>
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-kmc-gray-700 mb-2">
                             世代
                           </label>
                           <input
-                            type="text"
-                            value={feeSetting.applicable_generation || ''}
-                            onChange={(e) => updateFeeSetting(index, 'applicable_generation', e.target.value)}
+                            type="number"
+                            value={feeSetting.applicable_generation}
+                            onChange={(e) => updateFeeSetting(index, 'applicable_generation', Number(e.target.value))}
                             className="input-field w-full"
-                            placeholder="例: 2023"
+                            placeholder="例: 2024"
                           />
                         </div>
                         

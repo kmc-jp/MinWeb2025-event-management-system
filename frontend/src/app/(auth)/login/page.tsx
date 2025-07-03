@@ -2,26 +2,28 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserRole } from '../../../generated';
+import { UserRole } from '../../../generated/api';
 import { useAuth } from '../../../lib/auth';
 
+// Mockユーザーの型定義
+interface MockUser {
+  id: string;
+  name: string;
+  roles: string[];
+  generation: string;
+  password: string;
+}
+
 // Mockユーザーの定義
-const MOCK_USERS = [
-  { id: 'admin1', name: 'Admin User 1', role: 'CircleAdmin' as UserRole, generation: '2023', password: 'password' },
-  { id: 'admin2', name: 'Admin User 2', role: 'CircleAdmin' as UserRole, generation: '2024', password: 'password' },
-  { id: 'member1', name: 'Member User 1', role: 'RegularMember' as UserRole, generation: '2023', password: 'password' },
-  { id: 'member2', name: 'Member User 2', role: 'RegularMember' as UserRole, generation: '2024', password: 'password' },
-  { id: 'alumni1', name: 'Alumni User 1', role: 'Alumni' as UserRole, generation: '2022', password: 'password' },
-  { id: 'alumni2', name: 'Alumni User 2', role: 'Alumni' as UserRole, generation: '2021', password: 'password' },
-  { id: 'external1', name: 'External User 1', role: 'External' as UserRole, generation: '', password: 'password' },
-  { id: 'external2', name: 'External User 2', role: 'External' as UserRole, generation: '', password: 'password' },
+const MOCK_USERS: MockUser[] = [
+  { id: 'admin1', name: 'Admin User', roles: ['admin'], generation: '2023', password: 'password' },
+  { id: 'member1', name: 'Member User 1', roles: ['member'], generation: '2023', password: 'password' },
+  { id: 'member2', name: 'Member User 2', roles: ['member'], generation: '2024', password: 'password' },
 ];
 
-const roleLabels: { [key in UserRole]: string } = {
-  CircleAdmin: '運営',
-  RegularMember: '一般部員',
-  Alumni: 'OB・OG',
-  External: '外部の方',
+const roleLabels: Record<string, string> = {
+  member: '部員',
+  admin: '管理者',
 };
 
 export default function LoginPage() {
@@ -72,7 +74,7 @@ export default function LoginPage() {
       login({
         user_id: mockUser.id,
         name: mockUser.name,
-        role: mockUser.role,
+        roles: mockUser.roles as UserRole[],
         generation: mockUser.generation,
       });
 
@@ -148,7 +150,7 @@ export default function LoginPage() {
                 <option value="">ユーザーを選択してください</option>
                 {MOCK_USERS.map((user) => (
                   <option key={user.id} value={user.id}>
-                    {user.name} ({roleLabels[user.role]})
+                    {user.name} ({user.roles.map((role) => roleLabels[role]).join(', ')})
                   </option>
                 ))}
               </select>

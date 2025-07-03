@@ -66,10 +66,38 @@ var routes = Routes{
 	},
 
 	{
+		"AssignRoleToUser",
+		http.MethodPost,
+		"/api/users/:user_id/roles",
+		AssignRoleToUser,
+	},
+
+	{
 		"CreateEvent",
 		http.MethodPost,
 		"/api/events",
 		CreateEvent,
+	},
+
+	{
+		"CreateRole",
+		http.MethodPost,
+		"/api/roles",
+		CreateRole,
+	},
+
+	{
+		"CreateTag",
+		http.MethodPost,
+		"/api/tags",
+		CreateTag,
+	},
+
+	{
+		"DeleteRole",
+		http.MethodDelete,
+		"/api/roles/:role_name",
+		DeleteRole,
 	},
 
 	{
@@ -84,6 +112,13 @@ var routes = Routes{
 		http.MethodGet,
 		"/api/events/:id",
 		GetEventDetails,
+	},
+
+	{
+		"GetRoleDetails",
+		http.MethodGet,
+		"/api/roles/:role_name",
+		GetRoleDetails,
 	},
 
 	{
@@ -105,5 +140,33 @@ var routes = Routes{
 		http.MethodGet,
 		"/api/events",
 		ListEvents,
+	},
+
+	{
+		"ListRoles",
+		http.MethodGet,
+		"/api/roles",
+		ListRoles,
+	},
+
+	{
+		"ListTags",
+		http.MethodGet,
+		"/api/tags",
+		ListTags,
+	},
+
+	{
+		"RemoveRoleFromUser",
+		http.MethodDelete,
+		"/api/users/:user_id/roles",
+		RemoveRoleFromUser,
+	},
+
+	{
+		"UpdateRole",
+		http.MethodPut,
+		"/api/roles/:role_name",
+		UpdateRole,
 	},
 }
