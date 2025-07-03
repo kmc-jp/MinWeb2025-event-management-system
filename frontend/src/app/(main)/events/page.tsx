@@ -63,14 +63,14 @@ export default function EventsPage() {
             const isJoinable = userRoles.some((userRole: string) => allowedRoles.includes(userRole));
             
             // 参加済みかチェック（Mock実装では一部のイベントに参加済みとする）
-            const joinedEventIds = ['mock-event-1']; // Mock: イベント1に参加済み
+            const joinedEventIds = ['mock-event-1', 'mock-event-2', 'mock-event-4']; // Mock: 複数のイベントに参加済み
             const isJoined = joinedEventIds.includes(event.event_id);
             
             // 参加可能または参加済みの場合に表示
             return isJoinable || isJoined;
           } else if (participationFilter === 'joined') {
             // 参加済みかチェック（Mock実装では一部のイベントに参加済みとする）
-            const joinedEventIds = ['mock-event-1']; // Mock: イベント1に参加済み
+            const joinedEventIds = ['mock-event-1', 'mock-event-2', 'mock-event-4']; // Mock: 複数のイベントに参加済み
             return joinedEventIds.includes(event.event_id);
           }
           return true;

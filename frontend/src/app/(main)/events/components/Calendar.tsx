@@ -107,7 +107,7 @@ export default function Calendar({ events, onEventClick }: CalendarProps) {
       case 'DRAFT':
         return 'bg-gray-100 text-gray-800';
       case 'SCHEDULE_POLLING':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-pink-100 text-pink-800';
       case 'CONFIRMED':
         return 'bg-green-100 text-green-800';
       case 'FINISHED':
@@ -159,9 +159,6 @@ export default function Calendar({ events, onEventClick }: CalendarProps) {
                     >
                       <div className={`px-1 py-0.5 rounded text-xs ${getStatusColor(event.status)}`}>
                         {event.title}
-                        {event.status === 'SCHEDULE_POLLING' && (
-                          <span className="ml-1 text-orange-600">(調整中)</span>
-                        )}
                       </div>
                     </div>
                   ))}

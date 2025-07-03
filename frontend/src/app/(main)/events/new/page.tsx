@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getApiClient, handleApiError } from '../../../../lib/api';
-import { CreateEventRequest, FeeSetting, Money } from '../../../../generated/api';
-import { ROLE_LABELS } from '../../../../lib/constants';
+import { CreateEventRequest, FeeSetting, Money, Role } from '../../../../generated/api';
 
 // 日程設定を含む拡張されたCreateEventRequest型
 interface ExtendedCreateEventRequest extends Omit<CreateEventRequest, 'allowed_users'> {
@@ -37,11 +36,13 @@ export default function CreateEventPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [availableTags, setAvailableTags] = useState<any[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
   const [newTag, setNewTag] = useState('');
   const [newPollCandidate, setNewPollCandidate] = useState('');
 
   useEffect(() => {
     loadTags();
+    loadRoles();
   }, []);
 
   const loadTags = async () => {
@@ -53,7 +54,14 @@ export default function CreateEventPage() {
     }
   };
 
-  const userRoles: string[] = ['member', 'admin'];
+  const loadRoles = async () => {
+    try {
+      const response = await (getApiClient() as any).listRoles();
+      setAvailableRoles(response.data);
+    } catch (err) {
+      console.error('Failed to load roles:', err);
+    }
+  };
 
   const handleInputChange = (field: keyof ExtendedCreateEventRequest, value: any) => {
     setFormData(prev => ({
@@ -258,26 +266,26 @@ export default function CreateEventPage() {
                     役割を選択
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {userRoles.map((role) => (
+                    {availableRoles.map((role) => (
                       <button
-                        key={role}
+                        key={role.name}
                         type="button"
                         onClick={() => {
-                          if (!formData.allowed_roles.includes(role)) {
+                          if (!formData.allowed_roles.includes(role.name)) {
                             setFormData(prev => ({
                               ...prev,
-                              allowed_roles: [...prev.allowed_roles, role]
+                              allowed_roles: [...prev.allowed_roles, role.name]
                             }));
                           }
                         }}
-                        disabled={formData.allowed_roles.includes(role)}
+                        disabled={formData.allowed_roles.includes(role.name)}
                         className={`px-3 py-1 rounded-full text-sm border ${
-                          formData.allowed_roles.includes(role)
+                          formData.allowed_roles.includes(role.name)
                             ? 'bg-kmc-500 text-white border-kmc-500'
                             : 'bg-white text-kmc-700 border-kmc-300 hover:bg-kmc-50'
                         }`}
                       >
-                        {ROLE_LABELS[role]}
+                        {role.name}
                       </button>
                     ))}
                   </div>
@@ -290,26 +298,29 @@ export default function CreateEventPage() {
                       選択された役割
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {formData.allowed_roles.map((role) => (
-                        <span
-                          key={role}
-                          className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-kmc-100 text-kmc-800"
-                        >
-                          {ROLE_LABELS[role]}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFormData(prev => ({
-                                ...prev,
-                                allowed_roles: prev.allowed_roles.filter(r => r !== role)
-                              }));
-                            }}
-                            className="ml-2 text-kmc-600 hover:text-kmc-800"
+                      {formData.allowed_roles.map((roleName) => {
+                        const role = availableRoles.find(r => r.name === roleName);
+                        return (
+                          <span
+                            key={roleName}
+                            className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-kmc-100 text-kmc-800"
                           >
-                            ×
-                          </button>
-                        </span>
-                      ))}
+                            {role ? role.name : roleName}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  allowed_roles: prev.allowed_roles.filter(r => r !== roleName)
+                                }));
+                              }}
+                              className="ml-2 text-kmc-600 hover:text-kmc-800"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -326,26 +337,26 @@ export default function CreateEventPage() {
                     役割を選択
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {userRoles.map((role) => (
+                    {availableRoles.map((role) => (
                       <button
-                        key={role}
+                        key={role.name}
                         type="button"
                         onClick={() => {
-                          if (!formData.editable_roles?.includes(role)) {
+                          if (!formData.editable_roles?.includes(role.name)) {
                             setFormData(prev => ({
                               ...prev,
-                              editable_roles: [...(prev.editable_roles || []), role]
+                              editable_roles: [...(prev.editable_roles || []), role.name]
                             }));
                           }
                         }}
-                        disabled={formData.editable_roles?.includes(role)}
+                        disabled={formData.editable_roles?.includes(role.name)}
                         className={`px-3 py-1 rounded-full text-sm border ${
-                          formData.editable_roles?.includes(role)
+                          formData.editable_roles?.includes(role.name)
                             ? 'bg-kmc-500 text-white border-kmc-500'
                             : 'bg-white text-kmc-700 border-kmc-300 hover:bg-kmc-50'
                         }`}
                       >
-                        {ROLE_LABELS[role]}
+                        {role.name}
                       </button>
                     ))}
                   </div>
@@ -358,26 +369,29 @@ export default function CreateEventPage() {
                       選択された役割
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {formData.editable_roles.map((role) => (
-                        <span
-                          key={role}
-                          className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-kmc-100 text-kmc-800"
-                        >
-                          {ROLE_LABELS[role]}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFormData(prev => ({
-                                ...prev,
-                                editable_roles: (prev.editable_roles || []).filter(r => r !== role)
-                              }));
-                            }}
-                            className="ml-2 text-kmc-600 hover:text-kmc-800"
+                      {formData.editable_roles.map((roleName) => {
+                        const role = availableRoles.find(r => r.name === roleName);
+                        return (
+                          <span
+                            key={roleName}
+                            className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-kmc-100 text-kmc-800"
                           >
-                            ×
-                          </button>
-                        </span>
-                      ))}
+                            {role ? role.name : roleName}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  editable_roles: (prev.editable_roles || []).filter(r => r !== roleName)
+                                }));
+                              }}
+                              className="ml-2 text-kmc-600 hover:text-kmc-800"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
                 )}

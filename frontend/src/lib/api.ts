@@ -9,6 +9,23 @@ interface MockUser {
   generation: number;
 }
 
+// 認証ヘッダーを取得する関数
+const getAuthHeaders = () => {
+  if (typeof window !== 'undefined' && isDevelopment) {
+    const mockUserData = localStorage.getItem('mockUser');
+    if (mockUserData) {
+      const mockUser = JSON.parse(mockUserData);
+      // 開発環境ではmockユーザー情報をヘッダーに設定（ASCII文字のみ）
+      return {
+        'X-User-ID': mockUser.user_id,
+        'X-User-Roles': mockUser.roles.join(','),
+        'X-User-Generation': mockUser.generation.toString(),
+      };
+    }
+  }
+  return {};
+};
+
 // APIクライアントの設定
 const configuration = new Configuration({
   basePath: typeof window !== 'undefined' 
@@ -342,37 +359,241 @@ class MockApiClient {
     const mockEvents = [
       {
         event_id: 'mock-event-1',
-        title: 'Mock Event 1',
+        title: '技術勉強会：React入門',
         status: 'DRAFT' as EventSummaryStatusEnum,
-        organizer_name: 'Mock Organizer 1',
-        tags: ['ワークショップ', '技術勉強会'],
-        allowed_roles: ['member'], // member役割のユーザーのみ参加可能
-        confirmed_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 1週間後
+        organizer_name: '田中 健太',
+        tags: ['ワークショップ', '技術勉強会', 'React'],
+        allowed_roles: ['member'],
+        confirmed_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         schedule_deadline: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
       {
         event_id: 'mock-event-2',
-        title: 'Mock Event 2',
+        title: '懇親会：新入生歓迎',
         status: 'CONFIRMED' as EventSummaryStatusEnum,
-        organizer_name: 'Mock Organizer 2',
-        tags: ['懇親会', 'LT会'],
-        allowed_roles: ['member'], // member役割のユーザーのみ参加可能
-        confirmed_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 2週間後
+        organizer_name: '佐藤 由美',
+        tags: ['懇親会', '新入生'],
+        allowed_roles: ['member', 'admin'],
+        confirmed_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
         schedule_deadline: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
       {
         event_id: 'mock-event-3',
-        title: 'Mock Event 3',
+        title: 'LT会：技術発表',
         status: 'SCHEDULE_POLLING' as EventSummaryStatusEnum,
-        organizer_name: 'Mock Organizer 3',
-        tags: ['ハッカソン', 'ワークショップ'],
-        allowed_roles: ['member'], // member役割のユーザーのみ参加可能
+        organizer_name: '鈴木 太郎',
+        tags: ['LT会', '技術発表'],
+        allowed_roles: ['member'],
         confirmed_date: null,
-        schedule_deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(), // 10日後
+        schedule_deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        event_id: 'mock-event-4',
+        title: 'ハッカソン：AIチャレンジ',
+        status: 'CONFIRMED' as EventSummaryStatusEnum,
+        organizer_name: '高橋 花子',
+        tags: ['ハッカソン', 'AI', 'プログラミング'],
+        allowed_roles: ['member'],
+        confirmed_date: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
+        schedule_deadline: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        event_id: 'mock-event-5',
+        title: '読書会：技術書レビュー',
+        status: 'DRAFT' as EventSummaryStatusEnum,
+        organizer_name: '伊藤 次郎',
+        tags: ['読書会', '技術書'],
+        allowed_roles: ['member'],
+        confirmed_date: null,
+        schedule_deadline: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        event_id: 'mock-event-6',
+        title: 'ゲーム開発ワークショップ',
+        status: 'SCHEDULE_POLLING' as EventSummaryStatusEnum,
+        organizer_name: '渡辺 美咲',
+        tags: ['ワークショップ', 'ゲーム開発', 'Unity'],
+        allowed_roles: ['member'],
+        confirmed_date: null,
+        schedule_deadline: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        event_id: 'mock-event-7',
+        title: '卒業生送別会',
+        status: 'CONFIRMED' as EventSummaryStatusEnum,
+        organizer_name: '山田 健太',
+        tags: ['送別会', '卒業生'],
+        allowed_roles: ['member', 'admin'],
+        confirmed_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        schedule_deadline: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        event_id: 'mock-event-8',
+        title: 'デザインワークショップ',
+        status: 'DRAFT' as EventSummaryStatusEnum,
+        organizer_name: '中村 愛子',
+        tags: ['ワークショップ', 'デザイン', 'Figma'],
+        allowed_roles: ['member'],
+        confirmed_date: null,
+        schedule_deadline: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        event_id: 'mock-event-9',
+        title: 'バックエンド勉強会',
+        status: 'CONFIRMED' as EventSummaryStatusEnum,
+        organizer_name: '小林 大輔',
+        tags: ['勉強会', 'バックエンド', 'Go'],
+        allowed_roles: ['member'],
+        confirmed_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+        schedule_deadline: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        event_id: 'mock-event-10',
+        title: 'フロントエンド勉強会',
+        status: 'SCHEDULE_POLLING' as EventSummaryStatusEnum,
+        organizer_name: '加藤 恵子',
+        tags: ['勉強会', 'フロントエンド', 'TypeScript'],
+        allowed_roles: ['member'],
+        confirmed_date: null,
+        schedule_deadline: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        event_id: 'mock-event-11',
+        title: 'データサイエンス勉強会',
+        status: 'DRAFT' as EventSummaryStatusEnum,
+        organizer_name: '田中 健太',
+        tags: ['勉強会', 'データサイエンス', 'Python'],
+        allowed_roles: ['member'],
+        confirmed_date: null,
+        schedule_deadline: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        event_id: 'mock-event-12',
+        title: 'セキュリティ勉強会',
+        status: 'CONFIRMED' as EventSummaryStatusEnum,
+        organizer_name: '佐藤 由美',
+        tags: ['勉強会', 'セキュリティ'],
+        allowed_roles: ['member', 'admin'],
+        confirmed_date: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
+        schedule_deadline: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        event_id: 'mock-event-13',
+        title: 'モバイルアプリ開発ワークショップ',
+        status: 'SCHEDULE_POLLING' as EventSummaryStatusEnum,
+        organizer_name: '鈴木 太郎',
+        tags: ['ワークショップ', 'モバイル', 'Flutter'],
+        allowed_roles: ['member'],
+        confirmed_date: null,
+        schedule_deadline: new Date(Date.now() + 18 * 24 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        event_id: 'mock-event-14',
+        title: 'オープンソース貢献勉強会',
+        status: 'DRAFT' as EventSummaryStatusEnum,
+        organizer_name: '高橋 花子',
+        tags: ['勉強会', 'オープンソース', 'GitHub'],
+        allowed_roles: ['member'],
+        confirmed_date: null,
+        schedule_deadline: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        event_id: 'mock-event-15',
+        title: 'クラウドインフラ勉強会',
+        status: 'CONFIRMED' as EventSummaryStatusEnum,
+        organizer_name: '伊藤 次郎',
+        tags: ['勉強会', 'クラウド', 'AWS'],
+        allowed_roles: ['member'],
+        confirmed_date: new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString(),
+        schedule_deadline: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        event_id: 'mock-event-16',
+        title: '機械学習ワークショップ',
+        status: 'SCHEDULE_POLLING' as EventSummaryStatusEnum,
+        organizer_name: '渡辺 美咲',
+        tags: ['ワークショップ', '機械学習', 'TensorFlow'],
+        allowed_roles: ['member'],
+        confirmed_date: null,
+        schedule_deadline: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        event_id: 'mock-event-17',
+        title: 'ブロックチェーン勉強会',
+        status: 'DRAFT' as EventSummaryStatusEnum,
+        organizer_name: '山田 健太',
+        tags: ['勉強会', 'ブロックチェーン', 'Ethereum'],
+        allowed_roles: ['member'],
+        confirmed_date: null,
+        schedule_deadline: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        event_id: 'mock-event-18',
+        title: 'DevOps勉強会',
+        status: 'CONFIRMED' as EventSummaryStatusEnum,
+        organizer_name: '中村 愛子',
+        tags: ['勉強会', 'DevOps', 'Docker'],
+        allowed_roles: ['member', 'admin'],
+        confirmed_date: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000).toISOString(),
+        schedule_deadline: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        event_id: 'mock-event-19',
+        title: 'UI/UXデザイン勉強会',
+        status: 'SCHEDULE_POLLING' as EventSummaryStatusEnum,
+        organizer_name: '小林 大輔',
+        tags: ['勉強会', 'UI/UX', 'デザイン'],
+        allowed_roles: ['member'],
+        confirmed_date: null,
+        schedule_deadline: new Date(Date.now() + 22 * 24 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        event_id: 'mock-event-20',
+        title: 'プロジェクト管理勉強会',
+        status: 'DRAFT' as EventSummaryStatusEnum,
+        organizer_name: '加藤 恵子',
+        tags: ['勉強会', 'プロジェクト管理', 'アジャイル'],
+        allowed_roles: ['member'],
+        confirmed_date: null,
+        schedule_deadline: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
@@ -420,18 +641,39 @@ class MockApiClient {
   async listEventParticipants(id: string) {
     const mockParticipants = [
       {
-        user_id: 'user1',
-        name: '田中太郎',
-        generation: 1,
+        user_id: 'member1',
+        name: '鈴木 太郎',
+        generation: 45,
         joined_at: '2024-02-01T10:00:00Z',
         status: 'CONFIRMED'
       },
       {
-        user_id: 'user2',
-        name: '佐藤花子',
-        generation: 2,
+        user_id: 'member2',
+        name: '高橋 花子',
+        generation: 46,
         joined_at: '2024-02-02T11:00:00Z',
         status: 'PENDING'
+      },
+      {
+        user_id: 'member3',
+        name: '伊藤 次郎',
+        generation: 47,
+        joined_at: '2024-02-03T14:30:00Z',
+        status: 'CONFIRMED'
+      },
+      {
+        user_id: 'member4',
+        name: '渡辺 美咲',
+        generation: 48,
+        joined_at: '2024-02-04T09:15:00Z',
+        status: 'PENDING'
+      },
+      {
+        user_id: 'admin1',
+        name: '田中 健太',
+        generation: 45,
+        joined_at: '2024-02-01T08:00:00Z',
+        status: 'CONFIRMED'
       }
     ];
 
@@ -462,12 +704,91 @@ class MockApiClient {
   }
 }
 
+// APIクライアントをラップして認証ヘッダーを追加
+const createAuthenticatedApiClient = () => {
+  const authHeaders = getAuthHeaders();
+  
+  return {
+    // イベント関連
+    listEvents: async (page?: number, pageSize?: number, status?: 'DRAFT' | 'SCHEDULE_POLLING' | 'CONFIRMED' | 'FINISHED' | 'CANCELLED', tags?: string) => {
+      return apiClient.listEvents(page, pageSize, status, tags, { headers: authHeaders });
+    },
+    getEventDetails: async (id: string) => {
+      return apiClient.getEventDetails(id, { headers: authHeaders });
+    },
+    createEvent: async (createEventRequest: CreateEventRequest) => {
+      return apiClient.createEvent(createEventRequest, { headers: authHeaders });
+    },
+    updateEvent: async (id: string, updateEventRequest: UpdateEventRequest) => {
+      return apiClient.updateEvent(id, updateEventRequest, { headers: authHeaders });
+    },
+    deleteEvent: async (id: string) => {
+      return apiClient.deleteEvent(id, { headers: authHeaders });
+    },
+    joinEvent: async (id: string, joinEventRequest: { user_id: string }) => {
+      return apiClient.joinEvent(id, joinEventRequest, { headers: authHeaders });
+    },
+    leaveEvent: async (id: string, userId: string) => {
+      return apiClient.leaveEvent(id, userId, { headers: authHeaders });
+    },
+    listEventParticipants: async (id: string) => {
+      return apiClient.listEventParticipants(id, { headers: authHeaders });
+    },
+    
+    // ユーザー関連
+    getCurrentUser: async () => {
+      return apiClient.getCurrentUser({ headers: authHeaders });
+    },
+    listUsers: async (role?: string, generation?: string) => {
+      return apiClient.listUsers(role, generation, { headers: authHeaders });
+    },
+    getUser: async (id: string) => {
+      return apiClient.getUser(id, { headers: authHeaders });
+    },
+    
+    // 役割関連
+    listRoles: async () => {
+      return apiClient.listRoles({ headers: authHeaders });
+    },
+    getRoleDetails: async (roleName: string) => {
+      return apiClient.getRoleDetails(roleName, { headers: authHeaders });
+    },
+    createRole: async (roleData: { name: string; description: string }) => {
+      return apiClient.createRole(roleData, { headers: authHeaders });
+    },
+    updateRole: async (roleName: string, roleData: { description: string }) => {
+      return apiClient.updateRole(roleName, roleData, { headers: authHeaders });
+    },
+    deleteRole: async (roleName: string) => {
+      return apiClient.deleteRole(roleName, { headers: authHeaders });
+    },
+    assignRoleToUser: async (userId: string, roleName: string) => {
+      return apiClient.assignRoleToUser(userId, { role_name: roleName }, { headers: authHeaders });
+    },
+    removeRoleFromUser: async (userId: string, roleName: string) => {
+      return apiClient.removeRoleFromUser(userId, roleName, { headers: authHeaders });
+    },
+    
+    // タグ関連
+    listTags: async () => {
+      return apiClient.listTags({ headers: authHeaders });
+    },
+    createTag: async (tagData: { name: string }) => {
+      return apiClient.createTag(tagData, { headers: authHeaders });
+    },
+    
+    // その他
+    healthCheck: async () => {
+      return apiClient.healthCheck({ headers: authHeaders });
+    },
+  };
+};
+
 // 環境に応じてAPIクライアントを選択
 export const getApiClient = () => {
-  if (isDevelopment) {
-    return new MockApiClient();
-  }
-  return apiClient;
+  // 開発環境でも本番環境でも同じAPIクライアントを使用
+  // 認証のみmockを使用し、データはMySQLから取得
+  return createAuthenticatedApiClient();
 };
 
 // エラーハンドリング用のヘルパー関数

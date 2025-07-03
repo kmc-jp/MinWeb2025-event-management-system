@@ -83,7 +83,7 @@ func main() {
 	r.Use(func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-User-ID, X-User-Roles, X-User-Generation")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -92,6 +92,9 @@ func main() {
 
 		c.Next()
 	})
+
+	// 認証ミドルウェアの追加
+	r.Use(http.AuthMiddleware())
 
 	// ルートの登録
 	eventHandler.RegisterRoutes(r)

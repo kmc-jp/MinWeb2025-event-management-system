@@ -24,9 +24,16 @@ interface MockUser {
 
 // Mockユーザーデータ
 const MOCK_USERS: MockUser[] = [
-  { user_id: 'admin1', name: 'Admin User', roles: ['admin'], generation: '2023', password: 'password' },
-  { user_id: 'member1', name: 'Member User 1', roles: ['member'], generation: '2023', password: 'password' },
-  { user_id: 'member2', name: 'Member User 2', roles: ['member'], generation: '2024', password: 'password' },
+  { user_id: 'admin1', name: '田中 健太', roles: ['admin'], generation: '45', password: 'password' },
+  { user_id: 'admin2', name: '佐藤 由美', roles: ['admin'], generation: '46', password: 'password' },
+  { user_id: 'member1', name: '鈴木 太郎', roles: ['member'], generation: '45', password: 'password' },
+  { user_id: 'member2', name: '高橋 花子', roles: ['member'], generation: '46', password: 'password' },
+  { user_id: 'member3', name: '伊藤 次郎', roles: ['member'], generation: '47', password: 'password' },
+  { user_id: 'member4', name: '渡辺 美咲', roles: ['member'], generation: '48', password: 'password' },
+  { user_id: 'member5', name: '山田 健太', roles: ['member'], generation: '49', password: 'password' },
+  { user_id: 'member6', name: '中村 愛子', roles: ['member'], generation: '50', password: 'password' },
+  { user_id: 'member7', name: '小林 大輔', roles: ['member'], generation: '45', password: 'password' },
+  { user_id: 'member8', name: '加藤 恵子', roles: ['member'], generation: '46', password: 'password' },
 ];
 
 // 認証コンテキストの作成

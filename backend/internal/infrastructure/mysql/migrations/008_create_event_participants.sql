@@ -1,3 +1,8 @@
+-- 文字エンコーディング設定
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+SET character_set_connection = utf8mb4;
+
 -- イベント参加者テーブルを作成
 CREATE TABLE IF NOT EXISTS event_participants (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -17,6 +22,7 @@ CREATE TABLE IF NOT EXISTS event_participants (
     
     -- 外部キー制約
     FOREIGN KEY (event_id) REFERENCES events(event_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
     
     -- ユニーク制約（同じユーザーが同じイベントに重複参加できない）
     UNIQUE KEY unique_event_user (event_id, user_id)
