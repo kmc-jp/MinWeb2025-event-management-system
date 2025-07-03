@@ -2,16 +2,27 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
+# 依存関係のインストール
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --only=production
 
+# ソースコードのコピー
 COPY . .
+
+# Next.jsの設定ファイルを作成（静的エクスポート用）
+RUN echo 'module.exports = { output: "export", trailingSlash: true, images: { unoptimized: true } }' > next.config.js
+
+# ビルド実行
 RUN npm run build
 
+# 本番用イメージ
 FROM nginx:alpine
 
+# Nginx設定のコピー
 COPY nginx.conf /etc/nginx/nginx.conf
-COPY --from=builder /app/.next /usr/share/nginx/html
+
+# ビルドされたファイルをコピー
+COPY --from=builder /app/out /usr/share/nginx/html
 
 EXPOSE 80
 

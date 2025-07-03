@@ -2,8 +2,12 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# 依存関係のインストール
 COPY package*.json ./
 RUN npm install
+
+# ソースコードのコピー
+COPY . .
 
 EXPOSE 3000
 

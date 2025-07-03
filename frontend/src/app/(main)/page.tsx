@@ -1,30 +1,20 @@
-import Link from "next/link";
+'use client';
 
-export default function DashboardPage() {
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+export default function MainPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.push('/events');
+  }, [router]);
+
   return (
-    <div style={{ maxWidth: 800, margin: "2rem auto", padding: "0 1rem" }}>
-      <h1>イベント管理システム</h1>
-      
-      <div style={{ marginTop: "2rem" }}>
-        <h2>機能一覧</h2>
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          <li style={{ margin: "1rem 0" }}>
-            <Link 
-              href="/events/new" 
-              style={{
-                display: "inline-block",
-                padding: "0.75rem 1.5rem",
-                backgroundColor: "#0070f3",
-                color: "white",
-                textDecoration: "none",
-                borderRadius: "0.5rem",
-                fontWeight: "bold"
-              }}
-            >
-              イベント作成
-            </Link>
-          </li>
-        </ul>
+    <div className="min-h-screen bg-kmc-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-kmc-500 mx-auto"></div>
+        <p className="mt-4 text-kmc-gray-600">リダイレクト中...</p>
       </div>
     </div>
   );

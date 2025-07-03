@@ -1,42 +1,20 @@
-import type { Metadata } from "next";
+import '../globals.css';
 
-export const metadata: Metadata = {
-  title: "イベント管理システム",
-  description: "イベント管理システム",
-};
+export const metadata = {
+  title: 'イベント管理システム',
+  description: 'イベントの作成・管理・参加を簡単に行えるシステム',
+}
 
-export default function MainLayout({
+export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
     <html lang="ja">
-      <body style={{
-        margin: 0,
-        padding: 0,
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif",
-        lineHeight: 1.6,
-        color: "#333",
-        backgroundColor: "#fff"
-      }}>
-        <header style={{
-          backgroundColor: "#0070f3",
-          color: "white",
-          padding: "1rem 0",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-        }}>
-          <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1rem" }}>
-            <h1 style={{ margin: 0, fontSize: "1.5rem" }}>
-              イベント管理システム
-            </h1>
-          </div>
-        </header>
-        
-        <main>
-          {children}
-        </main>
+      <body className="font-sans antialiased">
+        {children}
       </body>
     </html>
-  );
+  )
 }
