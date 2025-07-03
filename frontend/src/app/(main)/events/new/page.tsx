@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { DefaultApi, CreateEventRequest, UserRole } from "../../../../generated/api";
-import { Configuration } from "../../../../generated/configuration";
+import { apiClient, handleApiError } from "../../../../lib/api";
+import { CreateEventRequest, UserRole } from "../../../../generated";
 
 export default function CreateEventPage() {
   const [title, setTitle] = useState("");
@@ -10,11 +10,6 @@ export default function CreateEventPage() {
   const [venue, setVenue] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // APIクライアントの初期化
-  const apiClient = new DefaultApi(new Configuration({
-    basePath: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
-  }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,14 +36,7 @@ export default function CreateEventPage() {
       setDescription("");
       setVenue("");
     } catch (error: any) {
-      console.error('API Error:', error);
-      if (error.response?.data?.error) {
-        setMessage(error.response.data.error);
-      } else if (error.message) {
-        setMessage(error.message);
-      } else {
-        setMessage("APIサーバーに接続できません。バックエンドが起動しているか確認してください。");
-      }
+      setMessage(handleApiError(error));
     } finally {
       setLoading(false);
     }
