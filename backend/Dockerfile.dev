@@ -1,27 +1,12 @@
-FROM golang:1.21-alpine
+FROM golang:1.23-alpine
 
 WORKDIR /app
 
-# 必要なパッケージをインストール
 RUN apk add --no-cache git
 
-# go.modとgo.sumをコピー
 COPY go.mod go.sum ./
+RUN go mod download
 
-# 依存関係をダウンロードして整理
-RUN go mod download && go mod tidy
-
-# ソースコードをコピー
-COPY . .
-
-# 依存関係を再度整理（ソースコード追加後）
-RUN go mod tidy
-
-# アプリケーションをビルド
-RUN go build -o bin/api cmd/api/main.go
-
-# ポート8080を公開
 EXPOSE 8080
 
-# アプリケーションを実行
-CMD ["go", "run", "cmd/api/main.go"] 
+CMD ["go", "run", "cmd/main.go"] 

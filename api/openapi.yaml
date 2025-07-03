@@ -1,0 +1,447 @@
+openapi: 3.0.3
+info:
+  title: イベント管理システム API
+  description: イベント管理システムのRESTful API - DDD/CQRSアーキテクチャに基づく実装
+  version: 1.0.0
+  contact:
+    name: 開発チーム
+    email: dev@example.com
+
+servers:
+  - url: http://localhost:8080
+    description: 開発環境
+
+paths:
+  /health:
+    get:
+      summary: ヘルスチェック
+      operationId: healthCheck
+      responses:
+        "200":
+          description: サービス正常
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthCheck"
+
+  /api/events:
+    get:
+      summary: イベント一覧を取得
+      operationId: listEvents
+      parameters:
+        - name: page
+          in: query
+          description: ページ番号
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: page_size
+          in: query
+          description: 1ページあたりの件数
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: status
+          in: query
+          description: イベントステータスでフィルタ
+          required: false
+          schema:
+            type: string
+            enum: [DRAFT, SCHEDULE_POLLING, CONFIRMED, FINISHED, CANCELLED]
+        - name: tags
+          in: query
+          description: タグでフィルタ（カンマ区切り）
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedEventList"
+        "400":
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    post:
+      summary: 新しいイベントを作成
+      operationId: createEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEventRequest"
+      responses:
+        "201":
+          description: イベント作成成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateEventResponse"
+        "400":
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: 認証エラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/events/{id}:
+    get:
+      summary: イベント詳細を取得
+      operationId: getEventDetails
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetails"
+        "404":
+          description: イベントが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/users/me:
+    get:
+      summary: 現在のユーザー情報を取得
+      operationId: getCurrentUser
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: 認証エラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: ユーザーが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/users/{id}:
+    get:
+      summary: ユーザー情報を取得
+      operationId: getUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: ユーザーが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  schemas:
+    # イベント関連
+    EventSummary:
+      type: object
+      properties:
+        event_id:
+          type: string
+          format: uuid
+          description: イベントID
+        title:
+          type: string
+          description: イベントタイトル
+        status:
+          type: string
+          enum: [DRAFT, SCHEDULE_POLLING, CONFIRMED, FINISHED, CANCELLED]
+          description: イベントステータス
+        venue:
+          type: string
+          description: 会場
+        organizer_name:
+          type: string
+          description: 主催者名
+        created_at:
+          type: string
+          format: date-time
+          description: 作成日時
+      required:
+        - event_id
+        - title
+        - status
+        - organizer_name
+        - created_at
+
+    EventDetails:
+      type: object
+      properties:
+        event_id:
+          type: string
+          format: uuid
+          description: イベントID
+        title:
+          type: string
+          description: イベントタイトル
+        description:
+          type: string
+          description: イベントの説明
+        status:
+          type: string
+          enum: [DRAFT, SCHEDULE_POLLING, CONFIRMED, FINISHED, CANCELLED]
+          description: イベントステータス
+        venue:
+          type: string
+          description: 会場
+        allowed_roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserRole"
+          description: 参加可能な役割
+        tags:
+          type: array
+          items:
+            type: string
+          description: タグ
+        fee_settings:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeeSetting"
+          description: 料金設定
+        organizer_name:
+          type: string
+          description: 主催者名
+        created_at:
+          type: string
+          format: date-time
+          description: 作成日時
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新日時
+      required:
+        - event_id
+        - title
+        - status
+        - organizer_name
+        - created_at
+        - updated_at
+
+    PaginatedEventList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/EventSummary"
+        total_count:
+          type: integer
+          description: 総件数
+        page:
+          type: integer
+          description: 現在のページ番号
+        page_size:
+          type: integer
+          description: 1ページあたりの件数
+      required:
+        - data
+        - total_count
+        - page
+        - page_size
+
+    CreateEventRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: イベントタイトル
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          description: イベントの説明
+          maxLength: 1000
+        venue:
+          type: string
+          description: 会場
+          maxLength: 200
+        allowed_roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserRole"
+          description: 参加可能な役割
+        tags:
+          type: array
+          items:
+            type: string
+          description: タグ
+        fee_settings:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeeSetting"
+          description: 料金設定
+        poll_type:
+          type: string
+          description: 日程調整タイプ
+          default: "date_select"
+        poll_candidates:
+          type: array
+          items:
+            type: string
+            format: date-time
+          description: 日程候補（ISO 8601形式）
+      required:
+        - title
+        - allowed_roles
+
+    CreateEventResponse:
+      type: object
+      properties:
+        event_id:
+          type: string
+          format: uuid
+          description: 作成されたイベントのID
+      required:
+        - event_id
+
+    # ユーザー関連
+    User:
+      type: object
+      properties:
+        user_id:
+          type: string
+          description: ユーザーID
+        name:
+          type: string
+          description: ユーザー名
+        role:
+          $ref: "#/components/schemas/UserRole"
+        generation:
+          type: string
+          description: 世代（例 "2023", "2024"）
+      required:
+        - user_id
+        - name
+        - role
+        - generation
+
+    UserRole:
+      type: string
+      enum: [CircleAdmin, RegularMember, Alumni, External]
+      description: ユーザーの役割
+
+    # 料金設定
+    FeeSetting:
+      type: object
+      properties:
+        applicable_role:
+          $ref: "#/components/schemas/UserRole"
+        applicable_generation:
+          type: string
+          description: 適用世代
+        fee:
+          $ref: "#/components/schemas/Money"
+      required:
+        - applicable_role
+        - fee
+
+    Money:
+      type: object
+      properties:
+        amount:
+          type: integer
+          description: 金額（最小単位）
+          minimum: 0
+        currency:
+          type: string
+          description: 通貨コード
+          default: "JPY"
+      required:
+        - amount
+        - currency
+
+    # 共通
+    HealthCheck:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, error]
+          description: サービス状態
+      required:
+        - status
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: エラーメッセージ
+      required:
+        - error
