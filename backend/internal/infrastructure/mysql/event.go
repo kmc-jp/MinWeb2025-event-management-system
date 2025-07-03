@@ -32,6 +32,11 @@ func NewMySQLEventRepository(dsn string) (repository_interface.EventRepository, 
 	return &MySQLEventRepository{db: db}, nil
 }
 
+// NewMySQLEventRepositoryWithDB は既存のデータベース接続を使用してMySQLイベントリポジトリを作成します
+func NewMySQLEventRepositoryWithDB(db *sql.DB) repository_interface.EventRepository {
+	return &MySQLEventRepository{db: db}
+}
+
 // Save はイベントを保存または更新します
 func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) error {
 	// イベント基本情報を保存
@@ -89,7 +94,7 @@ func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) err
 func (r *MySQLEventRepository) FindByID(ctx context.Context, id string) (*model.Event, error) {
 	query := `
 		SELECT e.event_id, e.title, e.description, e.status, e.venue, e.created_at, e.updated_at,
-		       u.user_id, u.name, u.role, u.generation
+		       u.user_id, u.name, u.generation
 		FROM events e
 		JOIN users u ON e.organizer_id = u.user_id
 		WHERE e.event_id = ?
@@ -111,7 +116,6 @@ func (r *MySQLEventRepository) FindByID(ctx context.Context, id string) (*model.
 		&event.UpdatedAt,
 		&organizer.UserID,
 		&organizer.Name,
-		&organizer.Role,
 		&organizer.Generation,
 	)
 	if err != nil {
@@ -136,7 +140,7 @@ func (r *MySQLEventRepository) FindByID(ctx context.Context, id string) (*model.
 func (r *MySQLEventRepository) FindAll(ctx context.Context) ([]*model.Event, error) {
 	query := `
 		SELECT e.event_id, e.title, e.description, e.status, e.venue, e.created_at, e.updated_at,
-		       u.user_id, u.name, u.role, u.generation
+		       u.user_id, u.name, u.generation
 		FROM events e
 		JOIN users u ON e.organizer_id = u.user_id
 		ORDER BY e.created_at DESC
@@ -164,7 +168,6 @@ func (r *MySQLEventRepository) FindAll(ctx context.Context) ([]*model.Event, err
 			&event.UpdatedAt,
 			&organizer.UserID,
 			&organizer.Name,
-			&organizer.Role,
 			&organizer.Generation,
 		)
 		if err != nil {
@@ -218,7 +221,6 @@ func (r *MySQLEventRepository) FindByStatus(ctx context.Context, status model.Ev
 			&event.UpdatedAt,
 			&organizer.UserID,
 			&organizer.Name,
-			&organizer.Role,
 			&organizer.Generation,
 		)
 		if err != nil {
@@ -296,8 +298,8 @@ func (r *MySQLEventRepository) saveFeeSettings(ctx context.Context, eventID stri
 	// 新しい料金設定を挿入
 	for _, fs := range feeSettings {
 		_, err := r.db.ExecContext(ctx,
-			"INSERT INTO event_fee_settings (event_id, applicable_role, applicable_generation, fee_amount, fee_currency) VALUES (?, ?, ?, ?, ?)",
-			eventID, string(fs.ApplicableRole), fs.ApplicableGeneration, fs.Fee.Amount, fs.Fee.Currency)
+			"INSERT INTO event_fee_settings (event_id, applicable_generation, fee_amount, fee_currency) VALUES (?, ?, ?, ?)",
+			eventID, fs.ApplicableGeneration, fs.Fee.Amount, fs.Fee.Currency)
 		if err != nil {
 			return err
 		}
@@ -322,6 +324,23 @@ func (r *MySQLEventRepository) saveSchedulePoll(ctx context.Context, eventID str
 }
 
 func (r *MySQLEventRepository) loadEventRelations(ctx context.Context, event *model.Event) error {
+	// 主催者の役割を取得
+	if event.Organizer != nil {
+		rows, err := r.db.QueryContext(ctx, "SELECT role FROM user_roles WHERE user_id = ?", event.Organizer.UserID)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var roleStr string
+			if err := rows.Scan(&roleStr); err != nil {
+				return err
+			}
+			event.Organizer.Roles = append(event.Organizer.Roles, model.UserRole(roleStr))
+		}
+	}
+
 	// 許可された役割を取得
 	rows, err := r.db.QueryContext(ctx, "SELECT role FROM event_allowed_roles WHERE event_id = ?", event.EventID)
 	if err != nil {
@@ -354,7 +373,7 @@ func (r *MySQLEventRepository) loadEventRelations(ctx context.Context, event *mo
 
 	// 料金設定を取得
 	rows, err = r.db.QueryContext(ctx,
-		"SELECT applicable_role, applicable_generation, fee_amount, fee_currency FROM event_fee_settings WHERE event_id = ?",
+		"SELECT applicable_generation, fee_amount, fee_currency FROM event_fee_settings WHERE event_id = ?",
 		event.EventID)
 	if err != nil {
 		return err
@@ -362,12 +381,20 @@ func (r *MySQLEventRepository) loadEventRelations(ctx context.Context, event *mo
 	defer rows.Close()
 
 	for rows.Next() {
-		var fs model.FeeSetting
-		var roleStr string
-		if err := rows.Scan(&roleStr, &fs.ApplicableGeneration, &fs.Fee.Amount, &fs.Fee.Currency); err != nil {
+		var generation int64
+		var amount int64
+		var currency string
+		if err := rows.Scan(&generation, &amount, &currency); err != nil {
 			return err
 		}
-		fs.ApplicableRole = model.UserRole(roleStr)
+
+		fs := model.FeeSetting{
+			ApplicableGeneration: generation,
+			Fee: model.Money{
+				Amount:   amount,
+				Currency: currency,
+			},
+		}
 		event.FeeSettings = append(event.FeeSettings, fs)
 	}
 

@@ -9,10 +9,12 @@
  */
 
 package generated
-// UserRole : ユーザーの役割
-type UserRole string
 
-// List of UserRole
-const (
-	MEMBER UserRole = "member"
-)
+type CreateRoleRequest struct {
+
+	// 役割名
+	Name string `json:"name"`
+
+	// 役割の説明
+	Description string `json:"description"`
+}

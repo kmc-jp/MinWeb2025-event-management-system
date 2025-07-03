@@ -26,6 +26,19 @@ import { BASE_PATH, COLLECTION_FORMATS, BaseAPI, RequiredError } from './base';
 /**
  * 
  * @export
+ * @interface AssignRoleRequest
+ */
+export interface AssignRoleRequest {
+    /**
+     * 付与する役割名
+     * @type {string}
+     * @memberof AssignRoleRequest
+     */
+    'role_name': string;
+}
+/**
+ * 
+ * @export
  * @interface CreateEventRequest
  */
 export interface CreateEventRequest {
@@ -49,10 +62,10 @@ export interface CreateEventRequest {
     'venue'?: string;
     /**
      * 参加可能な役割
-     * @type {Array<UserRole>}
+     * @type {Array<string>}
      * @memberof CreateEventRequest
      */
-    'allowed_roles': Array<UserRole>;
+    'allowed_roles': Array<string>;
     /**
      * タグ
      * @type {Array<string>}
@@ -94,6 +107,38 @@ export interface CreateEventResponse {
 /**
  * 
  * @export
+ * @interface CreateRoleRequest
+ */
+export interface CreateRoleRequest {
+    /**
+     * 役割名
+     * @type {string}
+     * @memberof CreateRoleRequest
+     */
+    'name': string;
+    /**
+     * 役割の説明
+     * @type {string}
+     * @memberof CreateRoleRequest
+     */
+    'description': string;
+}
+/**
+ * 
+ * @export
+ * @interface CreateTagRequest
+ */
+export interface CreateTagRequest {
+    /**
+     * タグ名
+     * @type {string}
+     * @memberof CreateTagRequest
+     */
+    'name': string;
+}
+/**
+ * 
+ * @export
  * @interface EventDetails
  */
 export interface EventDetails {
@@ -129,10 +174,10 @@ export interface EventDetails {
     'venue'?: string;
     /**
      * 参加可能な役割
-     * @type {Array<UserRole>}
+     * @type {Array<string>}
      * @memberof EventDetails
      */
-    'allowed_roles'?: Array<UserRole>;
+    'allowed_roles'?: Array<string>;
     /**
      * タグ
      * @type {Array<string>}
@@ -236,17 +281,11 @@ export type EventSummaryStatusEnum = typeof EventSummaryStatusEnum[keyof typeof 
  */
 export interface FeeSetting {
     /**
-     * 
-     * @type {UserRole}
+     * 適用世代（例: 2023, 2024）
+     * @type {number}
      * @memberof FeeSetting
      */
-    'applicable_role': UserRole;
-    /**
-     * 適用世代
-     * @type {string}
-     * @memberof FeeSetting
-     */
-    'applicable_generation'?: string;
+    'applicable_generation': number;
     /**
      * 
      * @type {Money}
@@ -254,8 +293,6 @@ export interface FeeSetting {
      */
     'fee': Money;
 }
-
-
 /**
  * 
  * @export
@@ -343,6 +380,112 @@ export interface PaginatedEventList {
 /**
  * 
  * @export
+ * @interface Role
+ */
+export interface Role {
+    /**
+     * 役割名
+     * @type {string}
+     * @memberof Role
+     */
+    'name': string;
+    /**
+     * 役割の説明
+     * @type {string}
+     * @memberof Role
+     */
+    'description': string;
+    /**
+     * 作成日時
+     * @type {string}
+     * @memberof Role
+     */
+    'created_at': string;
+    /**
+     * 作成者ID
+     * @type {string}
+     * @memberof Role
+     */
+    'created_by': string;
+}
+/**
+ * 
+ * @export
+ * @interface RoleDetails
+ */
+export interface RoleDetails {
+    /**
+     * 役割名
+     * @type {string}
+     * @memberof RoleDetails
+     */
+    'name': string;
+    /**
+     * 役割の説明
+     * @type {string}
+     * @memberof RoleDetails
+     */
+    'description': string;
+    /**
+     * 作成日時
+     * @type {string}
+     * @memberof RoleDetails
+     */
+    'created_at': string;
+    /**
+     * 作成者ID
+     * @type {string}
+     * @memberof RoleDetails
+     */
+    'created_by': string;
+    /**
+     * この役割を持つユーザー一覧
+     * @type {Array<UserSummary>}
+     * @memberof RoleDetails
+     */
+    'users': Array<UserSummary>;
+}
+/**
+ * 
+ * @export
+ * @interface Tag
+ */
+export interface Tag {
+    /**
+     * タグ名
+     * @type {string}
+     * @memberof Tag
+     */
+    'name': string;
+    /**
+     * 作成日時
+     * @type {string}
+     * @memberof Tag
+     */
+    'created_at': string;
+    /**
+     * 作成者ID
+     * @type {string}
+     * @memberof Tag
+     */
+    'created_by': string;
+}
+/**
+ * 
+ * @export
+ * @interface UpdateRoleRequest
+ */
+export interface UpdateRoleRequest {
+    /**
+     * 役割の説明
+     * @type {string}
+     * @memberof UpdateRoleRequest
+     */
+    'description': string;
+}
+/**
+ * 
+ * @export
  * @interface User
  */
 export interface User {
@@ -359,11 +502,11 @@ export interface User {
      */
     'name': string;
     /**
-     * 
-     * @type {UserRole}
+     * ユーザーの役割リスト
+     * @type {Array<string>}
      * @memberof User
      */
-    'role': UserRole;
+    'roles': Array<string>;
     /**
      * 世代（例 \"2023\", \"2024\"）
      * @type {string}
@@ -371,24 +514,31 @@ export interface User {
      */
     'generation': string;
 }
-
-
 /**
- * ユーザーの役割
+ * 
  * @export
- * @enum {string}
+ * @interface UserSummary
  */
-
-export const UserRole = {
-    CircleAdmin: 'CircleAdmin',
-    RegularMember: 'RegularMember',
-    Alumni: 'Alumni',
-    External: 'External'
-} as const;
-
-export type UserRole = typeof UserRole[keyof typeof UserRole];
-
-
+export interface UserSummary {
+    /**
+     * ユーザーID
+     * @type {string}
+     * @memberof UserSummary
+     */
+    'user_id': string;
+    /**
+     * ユーザー名
+     * @type {string}
+     * @memberof UserSummary
+     */
+    'name': string;
+    /**
+     * 世代
+     * @type {string}
+     * @memberof UserSummary
+     */
+    'generation': string;
+}
 
 /**
  * DefaultApi - axios parameter creator
@@ -396,6 +546,46 @@ export type UserRole = typeof UserRole[keyof typeof UserRole];
  */
 export const DefaultApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
+        /**
+         * 
+         * @summary ユーザーに役割を付与
+         * @param {string} userId 
+         * @param {AssignRoleRequest} assignRoleRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        assignRoleToUser: async (userId: string, assignRoleRequest: AssignRoleRequest, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'userId' is not null or undefined
+            assertParamExists('assignRoleToUser', 'userId', userId)
+            // verify required parameter 'assignRoleRequest' is not null or undefined
+            assertParamExists('assignRoleToUser', 'assignRoleRequest', assignRoleRequest)
+            const localVarPath = `/api/users/{user_id}/roles`
+                .replace(`{${"user_id"}}`, encodeURIComponent(String(userId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(assignRoleRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
         /**
          * 
          * @summary 新しいイベントを作成
@@ -426,6 +616,112 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
             localVarRequestOptions.data = serializeDataIfNeeded(createEventRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary 新しい役割を作成
+         * @param {CreateRoleRequest} createRoleRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        createRole: async (createRoleRequest: CreateRoleRequest, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'createRoleRequest' is not null or undefined
+            assertParamExists('createRole', 'createRoleRequest', createRoleRequest)
+            const localVarPath = `/api/roles`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(createRoleRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary 新しいタグを作成
+         * @param {CreateTagRequest} createTagRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        createTag: async (createTagRequest: CreateTagRequest, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'createTagRequest' is not null or undefined
+            assertParamExists('createTag', 'createTagRequest', createTagRequest)
+            const localVarPath = `/api/tags`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(createTagRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary 役割を削除
+         * @param {string} roleName 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        deleteRole: async (roleName: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'roleName' is not null or undefined
+            assertParamExists('deleteRole', 'roleName', roleName)
+            const localVarPath = `/api/roles/{role_name}`
+                .replace(`{${"role_name"}}`, encodeURIComponent(String(roleName)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'DELETE', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -474,6 +770,40 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
             assertParamExists('getEventDetails', 'id', id)
             const localVarPath = `/api/events/{id}`
                 .replace(`{${"id"}}`, encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary 役割詳細を取得
+         * @param {string} roleName 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getRoleDetails: async (roleName: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'roleName' is not null or undefined
+            assertParamExists('getRoleDetails', 'roleName', roleName)
+            const localVarPath = `/api/roles/{role_name}`
+                .replace(`{${"role_name"}}`, encodeURIComponent(String(roleName)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -610,6 +940,147 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
                 options: localVarRequestOptions,
             };
         },
+        /**
+         * 
+         * @summary 利用可能な役割一覧を取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        listRoles: async (options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/api/roles`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary タグ一覧を取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        listTags: async (options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/api/tags`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary ユーザーから役割を削除
+         * @param {string} userId 
+         * @param {string} roleName 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        removeRoleFromUser: async (userId: string, roleName: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'userId' is not null or undefined
+            assertParamExists('removeRoleFromUser', 'userId', userId)
+            // verify required parameter 'roleName' is not null or undefined
+            assertParamExists('removeRoleFromUser', 'roleName', roleName)
+            const localVarPath = `/api/users/{user_id}/roles`
+                .replace(`{${"user_id"}}`, encodeURIComponent(String(userId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'DELETE', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            if (roleName !== undefined) {
+                localVarQueryParameter['role_name'] = roleName;
+            }
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary 役割を更新
+         * @param {string} roleName 
+         * @param {UpdateRoleRequest} updateRoleRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        updateRole: async (roleName: string, updateRoleRequest: UpdateRoleRequest, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'roleName' is not null or undefined
+            assertParamExists('updateRole', 'roleName', roleName)
+            // verify required parameter 'updateRoleRequest' is not null or undefined
+            assertParamExists('updateRole', 'updateRoleRequest', updateRoleRequest)
+            const localVarPath = `/api/roles/{role_name}`
+                .replace(`{${"role_name"}}`, encodeURIComponent(String(roleName)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'PUT', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(updateRoleRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
     }
 };
 
@@ -622,6 +1093,18 @@ export const DefaultApiFp = function(configuration?: Configuration) {
     return {
         /**
          * 
+         * @summary ユーザーに役割を付与
+         * @param {string} userId 
+         * @param {AssignRoleRequest} assignRoleRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async assignRoleToUser(userId: string, assignRoleRequest: AssignRoleRequest, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<User>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.assignRoleToUser(userId, assignRoleRequest, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
          * @summary 新しいイベントを作成
          * @param {CreateEventRequest} createEventRequest 
          * @param {*} [options] Override http request option.
@@ -629,6 +1112,39 @@ export const DefaultApiFp = function(configuration?: Configuration) {
          */
         async createEvent(createEventRequest: CreateEventRequest, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CreateEventResponse>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.createEvent(createEventRequest, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary 新しい役割を作成
+         * @param {CreateRoleRequest} createRoleRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async createRole(createRoleRequest: CreateRoleRequest, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Role>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.createRole(createRoleRequest, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary 新しいタグを作成
+         * @param {CreateTagRequest} createTagRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async createTag(createTagRequest: CreateTagRequest, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Tag>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.createTag(createTagRequest, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary 役割を削除
+         * @param {string} roleName 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async deleteRole(roleName: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.deleteRole(roleName, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -650,6 +1166,17 @@ export const DefaultApiFp = function(configuration?: Configuration) {
          */
         async getEventDetails(id: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<EventDetails>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getEventDetails(id, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary 役割詳細を取得
+         * @param {string} roleName 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getRoleDetails(roleName: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<RoleDetails>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getRoleDetails(roleName, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -687,6 +1214,50 @@ export const DefaultApiFp = function(configuration?: Configuration) {
             const localVarAxiosArgs = await localVarAxiosParamCreator.listEvents(page, pageSize, status, tags, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
+        /**
+         * 
+         * @summary 利用可能な役割一覧を取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async listRoles(options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<Role>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.listRoles(options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary タグ一覧を取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async listTags(options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<Tag>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.listTags(options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary ユーザーから役割を削除
+         * @param {string} userId 
+         * @param {string} roleName 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async removeRoleFromUser(userId: string, roleName: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<User>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.removeRoleFromUser(userId, roleName, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary 役割を更新
+         * @param {string} roleName 
+         * @param {UpdateRoleRequest} updateRoleRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async updateRole(roleName: string, updateRoleRequest: UpdateRoleRequest, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Role>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.updateRole(roleName, updateRoleRequest, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
     }
 };
 
@@ -699,6 +1270,17 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
     return {
         /**
          * 
+         * @summary ユーザーに役割を付与
+         * @param {string} userId 
+         * @param {AssignRoleRequest} assignRoleRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        assignRoleToUser(userId: string, assignRoleRequest: AssignRoleRequest, options?: any): AxiosPromise<User> {
+            return localVarFp.assignRoleToUser(userId, assignRoleRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
          * @summary 新しいイベントを作成
          * @param {CreateEventRequest} createEventRequest 
          * @param {*} [options] Override http request option.
@@ -706,6 +1288,36 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
          */
         createEvent(createEventRequest: CreateEventRequest, options?: any): AxiosPromise<CreateEventResponse> {
             return localVarFp.createEvent(createEventRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary 新しい役割を作成
+         * @param {CreateRoleRequest} createRoleRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        createRole(createRoleRequest: CreateRoleRequest, options?: any): AxiosPromise<Role> {
+            return localVarFp.createRole(createRoleRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary 新しいタグを作成
+         * @param {CreateTagRequest} createTagRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        createTag(createTagRequest: CreateTagRequest, options?: any): AxiosPromise<Tag> {
+            return localVarFp.createTag(createTagRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary 役割を削除
+         * @param {string} roleName 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        deleteRole(roleName: string, options?: any): AxiosPromise<void> {
+            return localVarFp.deleteRole(roleName, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -725,6 +1337,16 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
          */
         getEventDetails(id: string, options?: any): AxiosPromise<EventDetails> {
             return localVarFp.getEventDetails(id, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary 役割詳細を取得
+         * @param {string} roleName 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getRoleDetails(roleName: string, options?: any): AxiosPromise<RoleDetails> {
+            return localVarFp.getRoleDetails(roleName, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -758,6 +1380,46 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
         listEvents(page?: number, pageSize?: number, status?: 'DRAFT' | 'SCHEDULE_POLLING' | 'CONFIRMED' | 'FINISHED' | 'CANCELLED', tags?: string, options?: any): AxiosPromise<PaginatedEventList> {
             return localVarFp.listEvents(page, pageSize, status, tags, options).then((request) => request(axios, basePath));
         },
+        /**
+         * 
+         * @summary 利用可能な役割一覧を取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        listRoles(options?: any): AxiosPromise<Array<Role>> {
+            return localVarFp.listRoles(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary タグ一覧を取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        listTags(options?: any): AxiosPromise<Array<Tag>> {
+            return localVarFp.listTags(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary ユーザーから役割を削除
+         * @param {string} userId 
+         * @param {string} roleName 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        removeRoleFromUser(userId: string, roleName: string, options?: any): AxiosPromise<User> {
+            return localVarFp.removeRoleFromUser(userId, roleName, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary 役割を更新
+         * @param {string} roleName 
+         * @param {UpdateRoleRequest} updateRoleRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        updateRole(roleName: string, updateRoleRequest: UpdateRoleRequest, options?: any): AxiosPromise<Role> {
+            return localVarFp.updateRole(roleName, updateRoleRequest, options).then((request) => request(axios, basePath));
+        },
     };
 };
 
@@ -769,6 +1431,17 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
 export interface DefaultApiInterface {
     /**
      * 
+     * @summary ユーザーに役割を付与
+     * @param {string} userId 
+     * @param {AssignRoleRequest} assignRoleRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApiInterface
+     */
+    assignRoleToUser(userId: string, assignRoleRequest: AssignRoleRequest, options?: AxiosRequestConfig): AxiosPromise<User>;
+
+    /**
+     * 
      * @summary 新しいイベントを作成
      * @param {CreateEventRequest} createEventRequest 
      * @param {*} [options] Override http request option.
@@ -776,6 +1449,36 @@ export interface DefaultApiInterface {
      * @memberof DefaultApiInterface
      */
     createEvent(createEventRequest: CreateEventRequest, options?: AxiosRequestConfig): AxiosPromise<CreateEventResponse>;
+
+    /**
+     * 
+     * @summary 新しい役割を作成
+     * @param {CreateRoleRequest} createRoleRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApiInterface
+     */
+    createRole(createRoleRequest: CreateRoleRequest, options?: AxiosRequestConfig): AxiosPromise<Role>;
+
+    /**
+     * 
+     * @summary 新しいタグを作成
+     * @param {CreateTagRequest} createTagRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApiInterface
+     */
+    createTag(createTagRequest: CreateTagRequest, options?: AxiosRequestConfig): AxiosPromise<Tag>;
+
+    /**
+     * 
+     * @summary 役割を削除
+     * @param {string} roleName 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApiInterface
+     */
+    deleteRole(roleName: string, options?: AxiosRequestConfig): AxiosPromise<void>;
 
     /**
      * 
@@ -795,6 +1498,16 @@ export interface DefaultApiInterface {
      * @memberof DefaultApiInterface
      */
     getEventDetails(id: string, options?: AxiosRequestConfig): AxiosPromise<EventDetails>;
+
+    /**
+     * 
+     * @summary 役割詳細を取得
+     * @param {string} roleName 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApiInterface
+     */
+    getRoleDetails(roleName: string, options?: AxiosRequestConfig): AxiosPromise<RoleDetails>;
 
     /**
      * 
@@ -828,6 +1541,46 @@ export interface DefaultApiInterface {
      */
     listEvents(page?: number, pageSize?: number, status?: 'DRAFT' | 'SCHEDULE_POLLING' | 'CONFIRMED' | 'FINISHED' | 'CANCELLED', tags?: string, options?: AxiosRequestConfig): AxiosPromise<PaginatedEventList>;
 
+    /**
+     * 
+     * @summary 利用可能な役割一覧を取得
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApiInterface
+     */
+    listRoles(options?: AxiosRequestConfig): AxiosPromise<Array<Role>>;
+
+    /**
+     * 
+     * @summary タグ一覧を取得
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApiInterface
+     */
+    listTags(options?: AxiosRequestConfig): AxiosPromise<Array<Tag>>;
+
+    /**
+     * 
+     * @summary ユーザーから役割を削除
+     * @param {string} userId 
+     * @param {string} roleName 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApiInterface
+     */
+    removeRoleFromUser(userId: string, roleName: string, options?: AxiosRequestConfig): AxiosPromise<User>;
+
+    /**
+     * 
+     * @summary 役割を更新
+     * @param {string} roleName 
+     * @param {UpdateRoleRequest} updateRoleRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApiInterface
+     */
+    updateRole(roleName: string, updateRoleRequest: UpdateRoleRequest, options?: AxiosRequestConfig): AxiosPromise<Role>;
+
 }
 
 /**
@@ -839,6 +1592,19 @@ export interface DefaultApiInterface {
 export class DefaultApi extends BaseAPI implements DefaultApiInterface {
     /**
      * 
+     * @summary ユーザーに役割を付与
+     * @param {string} userId 
+     * @param {AssignRoleRequest} assignRoleRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApi
+     */
+    public assignRoleToUser(userId: string, assignRoleRequest: AssignRoleRequest, options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).assignRoleToUser(userId, assignRoleRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
      * @summary 新しいイベントを作成
      * @param {CreateEventRequest} createEventRequest 
      * @param {*} [options] Override http request option.
@@ -847,6 +1613,42 @@ export class DefaultApi extends BaseAPI implements DefaultApiInterface {
      */
     public createEvent(createEventRequest: CreateEventRequest, options?: AxiosRequestConfig) {
         return DefaultApiFp(this.configuration).createEvent(createEventRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary 新しい役割を作成
+     * @param {CreateRoleRequest} createRoleRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApi
+     */
+    public createRole(createRoleRequest: CreateRoleRequest, options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).createRole(createRoleRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary 新しいタグを作成
+     * @param {CreateTagRequest} createTagRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApi
+     */
+    public createTag(createTagRequest: CreateTagRequest, options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).createTag(createTagRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary 役割を削除
+     * @param {string} roleName 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApi
+     */
+    public deleteRole(roleName: string, options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).deleteRole(roleName, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -870,6 +1672,18 @@ export class DefaultApi extends BaseAPI implements DefaultApiInterface {
      */
     public getEventDetails(id: string, options?: AxiosRequestConfig) {
         return DefaultApiFp(this.configuration).getEventDetails(id, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary 役割詳細を取得
+     * @param {string} roleName 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApi
+     */
+    public getRoleDetails(roleName: string, options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).getRoleDetails(roleName, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -908,6 +1722,54 @@ export class DefaultApi extends BaseAPI implements DefaultApiInterface {
      */
     public listEvents(page?: number, pageSize?: number, status?: 'DRAFT' | 'SCHEDULE_POLLING' | 'CONFIRMED' | 'FINISHED' | 'CANCELLED', tags?: string, options?: AxiosRequestConfig) {
         return DefaultApiFp(this.configuration).listEvents(page, pageSize, status, tags, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary 利用可能な役割一覧を取得
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApi
+     */
+    public listRoles(options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).listRoles(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary タグ一覧を取得
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApi
+     */
+    public listTags(options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).listTags(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary ユーザーから役割を削除
+     * @param {string} userId 
+     * @param {string} roleName 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApi
+     */
+    public removeRoleFromUser(userId: string, roleName: string, options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).removeRoleFromUser(userId, roleName, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary 役割を更新
+     * @param {string} roleName 
+     * @param {UpdateRoleRequest} updateRoleRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApi
+     */
+    public updateRole(roleName: string, updateRoleRequest: UpdateRoleRequest, options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).updateRole(roleName, updateRoleRequest, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

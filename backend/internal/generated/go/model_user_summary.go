@@ -9,10 +9,15 @@
  */
 
 package generated
-// UserRole : ユーザーの役割
-type UserRole string
 
-// List of UserRole
-const (
-	MEMBER UserRole = "member"
-)
+type UserSummary struct {
+
+	// ユーザーID
+	UserId string `json:"user_id"`
+
+	// ユーザー名
+	Name string `json:"name"`
+
+	// 世代
+	Generation string `json:"generation"`
+}

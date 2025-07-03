@@ -16,8 +16,28 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// AssignRoleToUser - ユーザーに役割を付与
+func AssignRoleToUser(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{})
+}
+
 // CreateEvent - 新しいイベントを作成
 func CreateEvent(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{})
+}
+
+// CreateRole - 新しい役割を作成
+func CreateRole(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{})
+}
+
+// CreateTag - 新しいタグを作成
+func CreateTag(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{})
+}
+
+// DeleteRole - 役割を削除
+func DeleteRole(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
@@ -28,6 +48,11 @@ func GetCurrentUser(c *gin.Context) {
 
 // GetEventDetails - イベント詳細を取得
 func GetEventDetails(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{})
+}
+
+// GetRoleDetails - 役割詳細を取得
+func GetRoleDetails(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
@@ -43,5 +68,25 @@ func HealthCheck(c *gin.Context) {
 
 // ListEvents - イベント一覧を取得
 func ListEvents(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{})
+}
+
+// ListRoles - 利用可能な役割一覧を取得
+func ListRoles(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{})
+}
+
+// ListTags - タグ一覧を取得
+func ListTags(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{})
+}
+
+// RemoveRoleFromUser - ユーザーから役割を削除
+func RemoveRoleFromUser(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{})
+}
+
+// UpdateRole - 役割を更新
+func UpdateRole(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }

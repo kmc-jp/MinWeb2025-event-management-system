@@ -9,10 +9,19 @@
  */
 
 package generated
-// UserRole : ユーザーの役割
-type UserRole string
 
-// List of UserRole
-const (
-	MEMBER UserRole = "member"
+import (
+	"time"
 )
+
+type Tag struct {
+
+	// タグ名
+	Name string `json:"name"`
+
+	// 作成日時
+	CreatedAt time.Time `json:"created_at"`
+
+	// 作成者ID
+	CreatedBy string `json:"created_by"`
+}

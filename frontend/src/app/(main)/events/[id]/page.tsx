@@ -1,59 +1,70 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { apiClient, handleApiError } from '../../../../lib/api';
-import { EventDetails } from '../../../../generated';
+import { getApiClient, handleApiError } from '../../../../lib/api';
+import { EventDetails, EventDetailsStatusEnum } from '../../../../generated';
 
 export default function EventDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const eventId = params.id as string;
   
   const [event, setEvent] = useState<EventDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    fetchEventDetails();
+  }, [eventId]);
+
   const fetchEventDetails = async () => {
     try {
       setLoading(true);
-      setError(null);
-      
+      const apiClient = getApiClient();
       const response = await apiClient.getEventDetails(eventId);
-      setEvent(response.data);
-    } catch (err) {
-      setError(handleApiError(err));
+      if (response.data && 'allowed_roles' in response.data && Array.isArray(response.data.allowed_roles)) {
+        response.data.allowed_roles = response.data.allowed_roles.filter(role => role === 'member');
+      }
+      setEvent(response.data as EventDetails);
+    } catch (error) {
+      setError(handleApiError(error));
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (eventId) {
-      fetchEventDetails();
-    }
-  }, [eventId]);
-
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: EventDetailsStatusEnum) => {
     switch (status) {
-      case 'DRAFT': return 'bg-kmc-gray-100 text-kmc-gray-800';
-      case 'SCHEDULE_POLLING': return 'bg-kmc-100 text-kmc-700';
-      case 'CONFIRMED': return 'bg-green-100 text-green-800';
-      case 'FINISHED': return 'bg-purple-100 text-purple-800';
-      case 'CANCELLED': return 'bg-red-100 text-red-800';
-      default: return 'bg-kmc-gray-100 text-kmc-gray-800';
+      case 'DRAFT':
+        return 'bg-gray-100 text-gray-800';
+      case 'SCHEDULE_POLLING':
+        return 'bg-blue-100 text-blue-800';
+      case 'CONFIRMED':
+        return 'bg-green-100 text-green-800';
+      case 'FINISHED':
+        return 'bg-purple-100 text-purple-800';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getStatusText = (status: string) => {
+  const getStatusText = (status: EventDetailsStatusEnum) => {
     switch (status) {
-      case 'DRAFT': return '下書き';
-      case 'SCHEDULE_POLLING': return '日程調整中';
-      case 'CONFIRMED': return '確定';
-      case 'FINISHED': return '終了';
-      case 'CANCELLED': return 'キャンセル';
-      default: return status;
+      case 'DRAFT':
+        return '下書き';
+      case 'SCHEDULE_POLLING':
+        return '日程調整中';
+      case 'CONFIRMED':
+        return '確定';
+      case 'FINISHED':
+        return '終了';
+      case 'CANCELLED':
+        return 'キャンセル';
+      default:
+        return status;
     }
   };
 
@@ -149,114 +160,101 @@ export default function EventDetailPage() {
       </header>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* メインコンテンツ */}
-        <div className="card overflow-hidden">
-          <div className="p-6">
-            {/* 基本情報 */}
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">基本情報</h2>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="text-sm font-medium text-kmc-gray-500">主催者</label>
-                  <p className="text-kmc-gray-900">{event.organizer_name}</p>
+        <div className="grid gap-8 lg:grid-cols-3">
+          {/* メインコンテンツ */}
+          <div className="lg:col-span-2">
+            <div className="card p-6">
+              <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">イベント詳細</h2>
+              
+              {event.description && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-kmc-gray-700 mb-2">説明</h3>
+                  <p className="text-kmc-gray-900 whitespace-pre-wrap">{event.description}</p>
                 </div>
-                {event.venue && (
-                  <div>
-                    <label className="text-sm font-medium text-kmc-gray-500">会場</label>
-                    <p className="text-kmc-gray-900">{event.venue}</p>
+              )}
+
+              {event.venue && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-kmc-gray-700 mb-2">会場</h3>
+                  <p className="text-kmc-gray-900">{event.venue}</p>
+                </div>
+              )}
+
+              {event.allowed_roles && event.allowed_roles.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-kmc-gray-700 mb-2">参加可能な役割</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {event.allowed_roles.map((role) => (
+                      <span
+                        key={role}
+                        className="px-2 py-1 bg-kmc-100 text-kmc-700 rounded-full text-xs font-medium"
+                      >
+                        {role}
+                      </span>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
+
+              {event.tags && event.tags.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-kmc-gray-700 mb-2">タグ</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {event.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="px-2 py-1 bg-kmc-gray-100 text-kmc-gray-700 rounded-full text-xs font-medium"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {event.fee_settings && event.fee_settings.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-kmc-gray-700 mb-2">料金設定</h3>
+                  <div className="space-y-2">
+                    {event.fee_settings.map((feeSetting, index) => (
+                      <div key={index} className="flex justify-between items-center p-3 bg-kmc-gray-50 rounded-lg">
+                        <div>
+                          {feeSetting.applicable_generation && (
+                            <span className="text-sm text-kmc-gray-600 ml-2">
+                              ({feeSetting.applicable_generation}期)
+                            </span>
+                          )}
+                        </div>
+                        <span className="font-medium">
+                          {formatMoney(feeSetting.fee.amount, feeSetting.fee.currency)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* サイドバー */}
+          <div className="space-y-6">
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-kmc-gray-900 mb-4">イベント情報</h3>
+              <div className="space-y-3 text-sm">
                 <div>
-                  <label className="text-sm font-medium text-kmc-gray-500">作成日時</label>
-                  <p className="text-kmc-gray-900">{formatDate(event.created_at)}</p>
+                  <span className="text-kmc-gray-600">主催者:</span>
+                  <p className="font-medium text-kmc-gray-900">{event.organizer_name}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-kmc-gray-500">更新日時</label>
-                  <p className="text-kmc-gray-900">{formatDate(event.updated_at)}</p>
+                  <span className="text-kmc-gray-600">作成日:</span>
+                  <p className="font-medium text-kmc-gray-900">{formatDate(event.created_at)}</p>
+                </div>
+                <div>
+                  <span className="text-kmc-gray-600">更新日:</span>
+                  <p className="font-medium text-kmc-gray-900">{formatDate(event.updated_at)}</p>
                 </div>
               </div>
             </div>
-
-            {/* 説明 */}
-            {event.description && (
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">説明</h2>
-                <p className="text-kmc-gray-700 whitespace-pre-wrap">{event.description}</p>
-              </div>
-            )}
-
-            {/* 参加可能な役割 */}
-            {event.allowed_roles && event.allowed_roles.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">参加可能な役割</h2>
-                <div className="flex flex-wrap gap-2">
-                  {event.allowed_roles.map((role, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-kmc-100 text-kmc-700 rounded-full text-sm font-medium"
-                    >
-                      {role}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* タグ */}
-            {event.tags && event.tags.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">タグ</h2>
-                <div className="flex flex-wrap gap-2">
-                  {event.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-kmc-gray-100 text-kmc-gray-800 rounded-full text-sm font-medium"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 料金設定 */}
-            {event.fee_settings && event.fee_settings.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">料金設定</h2>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-kmc-gray-200">
-                    <thead className="bg-kmc-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-kmc-gray-500 uppercase tracking-wider">
-                          役割
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-kmc-gray-500 uppercase tracking-wider">
-                          世代
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-kmc-gray-500 uppercase tracking-wider">
-                          料金
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-kmc-gray-200">
-                      {event.fee_settings.map((feeSetting, index) => (
-                        <tr key={index}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-kmc-gray-900">
-                            {feeSetting.applicable_role}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-kmc-gray-500">
-                            {feeSetting.applicable_generation || '全世代'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-kmc-gray-900">
-                            {formatMoney(feeSetting.fee.amount, feeSetting.fee.currency)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

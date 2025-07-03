@@ -9,10 +9,9 @@
  */
 
 package generated
-// UserRole : ユーザーの役割
-type UserRole string
 
-// List of UserRole
-const (
-	MEMBER UserRole = "member"
-)
+type CreateTagRequest struct {
+
+	// タグ名
+	Name string `json:"name"`
+}

@@ -10,17 +10,24 @@
 
 package generated
 
-type User struct {
+import (
+	"time"
+)
 
-	// ユーザーID
-	UserId string `json:"user_id"`
+type RoleDetails struct {
 
-	// ユーザー名
+	// 役割名
 	Name string `json:"name"`
 
-	// ユーザーの役割リスト
-	Roles []string `json:"roles"`
+	// 役割の説明
+	Description string `json:"description"`
 
-	// 世代（例 \"2023\", \"2024\"）
-	Generation string `json:"generation"`
+	// 作成日時
+	CreatedAt time.Time `json:"created_at"`
+
+	// 作成者ID
+	CreatedBy string `json:"created_by"`
+
+	// この役割を持つユーザー一覧
+	Users []UserSummary `json:"users"`
 }

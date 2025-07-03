@@ -1,4 +1,7 @@
-import { DefaultApi, Configuration } from '../generated';
+import { DefaultApi, Configuration, PaginatedEventList, EventSummaryStatusEnum, UserRole } from '../generated';
+
+// 開発環境かどうかをチェック
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 // APIクライアントの設定
 const configuration = new Configuration({
@@ -9,6 +12,294 @@ const configuration = new Configuration({
 
 // APIクライアントのインスタンスを作成
 export const apiClient = new DefaultApi(configuration);
+
+// Mockユーザー用のAPIクライアント
+class MockApiClient {
+  private mockUser: any = null;
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      const mockUserData = localStorage.getItem('mockUser');
+      if (mockUserData) {
+        this.mockUser = JSON.parse(mockUserData);
+      }
+    }
+  }
+
+  // 現在のユーザー情報を取得（Mock）
+  async getCurrentUser() {
+    if (!this.mockUser) {
+      throw new Error('ユーザーが認証されていません');
+    }
+
+    return {
+      data: {
+        user_id: this.mockUser.user_id,
+        name: this.mockUser.name,
+        roles: this.mockUser.roles,
+        generation: this.mockUser.generation,
+      }
+    };
+  }
+
+  // 役割一覧を取得（Mock）
+  async listRoles() {
+    return {
+      data: [
+        {
+          name: 'admin',
+          description: 'システム管理者',
+          created_at: '2023-01-01T00:00:00Z',
+          created_by: 'system'
+        },
+        {
+          name: 'member',
+          description: '一般部員',
+          created_at: '2023-01-01T00:00:00Z',
+          created_by: 'system'
+        }
+      ]
+    };
+  }
+
+  // 役割詳細を取得（Mock）
+  async getRoleDetails(roleName: string) {
+    const mockUsers = [
+      { user_id: 'admin1', name: 'Admin User', generation: '2023' },
+      { user_id: 'member1', name: 'Member User 1', generation: '2023' },
+      { user_id: 'member2', name: 'Member User 2', generation: '2024' }
+    ];
+
+    return {
+      data: {
+        name: roleName,
+        description: roleName === 'admin' ? 'システム管理者' : '一般部員',
+        created_at: '2023-01-01T00:00:00Z',
+        created_by: 'system',
+        users: roleName === 'admin' ? [mockUsers[0]] : mockUsers.slice(1)
+      }
+    };
+  }
+
+  // 役割を更新（Mock）
+  async updateRole(roleName: string, roleData: { description: string }) {
+    return {
+      data: {
+        name: roleName,
+        description: roleData.description,
+        created_at: '2023-01-01T00:00:00Z',
+        created_by: 'system'
+      }
+    };
+  }
+
+  // タグ一覧を取得（Mock）
+  async listTags() {
+    return {
+      data: [
+        { name: '技術勉強会', created_at: '2023-01-01T00:00:00Z', created_by: 'system' },
+        { name: '懇親会', created_at: '2023-01-01T00:00:00Z', created_by: 'system' },
+        { name: 'ハッカソン', created_at: '2023-01-01T00:00:00Z', created_by: 'system' },
+        { name: 'LT会', created_at: '2023-01-01T00:00:00Z', created_by: 'system' },
+        { name: 'ワークショップ', created_at: '2023-01-01T00:00:00Z', created_by: 'system' }
+      ]
+    };
+  }
+
+  // 新しいタグを作成（Mock）
+  async createTag(tagData: { name: string }) {
+    return {
+      data: {
+        name: tagData.name,
+        created_at: '2023-01-01T00:00:00Z',
+        created_by: 'system'
+      }
+    };
+  }
+
+  // 新しい役割を作成（Mock）
+  async createRole(roleData: { name: string; description: string }) {
+    return {
+      data: {
+        name: roleData.name,
+        description: roleData.description,
+        created_at: new Date().toISOString(),
+        created_by: this.mockUser?.user_id || 'unknown'
+      }
+    };
+  }
+
+  // 役割を削除（Mock）
+  async deleteRole(roleName: string) {
+    // Mock実装では何もしない
+    return { data: undefined };
+  }
+
+  // ユーザーに役割を付与（Mock）
+  async assignRoleToUser(userId: string, roleName: string) {
+    // Mock実装では現在のユーザー情報を返す
+    if (!this.mockUser) {
+      throw new Error('ユーザーが認証されていません');
+    }
+
+    return {
+      data: {
+        user_id: this.mockUser.user_id,
+        name: this.mockUser.name,
+        roles: [...this.mockUser.roles, roleName as any],
+        generation: this.mockUser.generation,
+      }
+    };
+  }
+
+  // ユーザーから役割を削除（Mock）
+  async removeRoleFromUser(userId: string, roleName: string) {
+    // Mock実装では現在のユーザー情報を返す
+    if (!this.mockUser) {
+      throw new Error('ユーザーが認証されていません');
+    }
+
+    return {
+      data: {
+        user_id: this.mockUser.user_id,
+        name: this.mockUser.name,
+        roles: this.mockUser.roles.filter((role: string) => role !== roleName),
+        generation: this.mockUser.generation,
+      }
+    };
+  }
+
+  // ユーザー情報を取得（Mock）
+  async getUser(id: string) {
+    if (!this.mockUser) {
+      throw new Error('ユーザーが認証されていません');
+    }
+
+    // 現在のユーザーのIDと一致する場合のみ返す
+    if (id === this.mockUser.user_id) {
+      return {
+        data: {
+          user_id: this.mockUser.user_id,
+          name: this.mockUser.name,
+          roles: this.mockUser.roles,
+          generation: this.mockUser.generation,
+        }
+      };
+    }
+
+    throw new Error('ユーザーが見つかりません');
+  }
+
+  // イベント作成（Mock）
+  async createEvent(createEventRequest: any) {
+    if (!this.mockUser) {
+      throw new Error('ユーザーが認証されていません');
+    }
+
+    // 運営のみがイベントを作成可能
+    if (this.mockUser.role !== 'CircleAdmin') {
+      throw new Error('イベントの作成権限がありません');
+    }
+
+    return {
+      data: {
+        event_id: `mock-event-${Date.now()}`,
+        title: createEventRequest.title,
+        description: createEventRequest.description,
+        venue: createEventRequest.venue,
+        allowed_roles: createEventRequest.allowed_roles,
+        tags: createEventRequest.tags,
+        fee_settings: createEventRequest.fee_settings,
+        poll_type: createEventRequest.poll_type,
+        poll_candidates: createEventRequest.poll_candidates,
+        status: 'DRAFT',
+        organizer_name: this.mockUser.name,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+    };
+  }
+
+  // イベント詳細を取得（Mock）
+  async getEventDetails(id: string) {
+    if (!this.mockUser) {
+      throw new Error('ユーザーが認証されていません');
+    }
+
+    // Mockイベントデータ
+    const mockEvent = {
+      event_id: id,
+      title: 'Mock Event',
+      description: 'This is a mock event for development',
+      venue: 'Mock Venue',
+      allowed_roles: ['Member'],
+      tags: ['mock', 'development'],
+      fee_settings: [],
+      poll_type: 'date_select',
+      poll_candidates: [],
+      status: 'DRAFT' as EventSummaryStatusEnum,
+      organizer_name: 'Mock Organizer',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    return {
+      data: mockEvent
+    };
+  }
+
+  // イベント一覧を取得（Mock）
+  async listEvents(page?: number, pageSize?: number, status?: string, tags?: string) {
+    if (!this.mockUser) {
+      throw new Error('ユーザーが認証されていません');
+    }
+
+    const mockEvents = [
+      {
+        event_id: 'mock-event-1',
+        title: 'Mock Event 1',
+        status: 'DRAFT' as EventSummaryStatusEnum,
+        organizer_name: 'Mock Organizer 1',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        event_id: 'mock-event-2',
+        title: 'Mock Event 2',
+        status: 'CONFIRMED' as EventSummaryStatusEnum,
+        organizer_name: 'Mock Organizer 2',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ];
+
+    return {
+      data: {
+        data: mockEvents,
+        total_count: mockEvents.length,
+        page: page || 1,
+        page_size: pageSize || 10,
+      }
+    };
+  }
+
+  // ヘルスチェック（Mock）
+  async healthCheck() {
+    return {
+      data: {
+        status: 'ok'
+      }
+    };
+  }
+}
+
+// 環境に応じてAPIクライアントを選択
+export const getApiClient = () => {
+  if (isDevelopment) {
+    return new MockApiClient();
+  }
+  return apiClient;
+};
 
 // エラーハンドリング用のヘルパー関数
 export const handleApiError = (error: any): string => {

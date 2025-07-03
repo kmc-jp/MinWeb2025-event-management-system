@@ -12,10 +12,8 @@ package generated
 
 type FeeSetting struct {
 
-	ApplicableRole UserRole `json:"applicable_role"`
-
-	// 適用世代
-	ApplicableGeneration string `json:"applicable_generation,omitempty"`
+	// 適用世代（例: 2023, 2024）
+	ApplicableGeneration int32 `json:"applicable_generation"`
 
 	Fee Money `json:"fee"`
 }

@@ -2,13 +2,21 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '../../lib/auth';
 
 export default function MainPage() {
   const router = useRouter();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    router.push('/events');
-  }, [router]);
+    if (!loading) {
+      if (user) {
+        router.push('/events');
+      } else {
+        router.push('/login');
+      }
+    }
+  }, [user, loading, router]);
 
   return (
     <div className="min-h-screen bg-kmc-gray-50 flex items-center justify-center">

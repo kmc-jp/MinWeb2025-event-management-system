@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { apiClient, handleApiError } from '../../../../lib/api';
-import { CreateEventRequest, UserRole, FeeSetting, Money } from '../../../../generated';
+import { getApiClient, handleApiError } from '../../../../lib/api';
+import { CreateEventRequest, UserRole, FeeSetting, Money } from '../../../../generated/api';
 
 export default function CreateEventPage() {
   const router = useRouter();
@@ -22,15 +22,27 @@ export default function CreateEventPage() {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [availableTags, setAvailableTags] = useState<any[]>([]);
   const [newTag, setNewTag] = useState('');
   const [newPollCandidate, setNewPollCandidate] = useState('');
 
-  const userRoles: UserRole[] = ['CircleAdmin', 'RegularMember', 'Alumni', 'External'];
+  useEffect(() => {
+    loadTags();
+  }, []);
+
+  const loadTags = async () => {
+    try {
+      const response = await (getApiClient() as any).listTags();
+      setAvailableTags(response.data);
+    } catch (err) {
+      console.error('Failed to load tags:', err);
+    }
+  };
+
+  const userRoles: UserRole[] = ['member', 'admin'];
   const userRoleLabels: { [key in UserRole]: string } = {
-    CircleAdmin: '運営',
-    RegularMember: '一般部員',
-    Alumni: 'OB・OG',
-    External: '外部の方',
+    'member': '部員',
+    'admin': '管理者',
   };
 
   const handleInputChange = (field: keyof CreateEventRequest, value: any) => {
@@ -59,6 +71,27 @@ export default function CreateEventPage() {
     }
   };
 
+  const createAndAddTag = async () => {
+    if (newTag.trim() && !formData.tags?.includes(newTag.trim())) {
+      try {
+        // 新しいタグを作成
+        await (getApiClient() as any).createTag({ name: newTag.trim() });
+        // タグ一覧を再読み込み
+        await loadTags();
+        // フォームに追加
+        setFormData(prev => ({
+          ...prev,
+          tags: [...(prev.tags || []), newTag.trim()]
+        }));
+        setNewTag('');
+      } catch (err) {
+        console.error('Failed to create tag:', err);
+        // 作成に失敗した場合は既存のタグとして追加
+        addTag();
+      }
+    }
+  };
+
   const removeTag = (tagToRemove: string) => {
     setFormData(prev => ({
       ...prev,
@@ -67,7 +100,7 @@ export default function CreateEventPage() {
   };
 
   const addPollCandidate = () => {
-    if (newPollCandidate.trim()) {
+    if (newPollCandidate.trim() && !formData.poll_candidates?.includes(newPollCandidate.trim())) {
       setFormData(prev => ({
         ...prev,
         poll_candidates: [...(prev.poll_candidates || []), newPollCandidate.trim()]
@@ -85,8 +118,7 @@ export default function CreateEventPage() {
 
   const addFeeSetting = () => {
     const newFeeSetting: FeeSetting = {
-      applicable_role: 'RegularMember',
-      applicable_generation: '',
+      applicable_generation: 2024,
       fee: {
         amount: 0,
         currency: 'JPY'
@@ -101,7 +133,7 @@ export default function CreateEventPage() {
   const updateFeeSetting = (index: number, field: keyof FeeSetting, value: any) => {
     setFormData(prev => ({
       ...prev,
-      fee_settings: prev.fee_settings?.map((setting, i) => 
+      fee_settings: prev.fee_settings?.map((setting, i) =>
         i === index ? { ...setting, [field]: value } : setting
       ) || []
     }));
@@ -116,25 +148,17 @@ export default function CreateEventPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.title.trim()) {
-      setError('タイトルは必須です');
-      return;
-    }
-    
-    if (formData.allowed_roles.length === 0) {
-      setError('参加可能な役割を少なくとも1つ選択してください');
-      return;
-    }
+    setLoading(true);
+    setError(null);
 
     try {
-      setLoading(true);
-      setError(null);
-      
+      const apiClient = getApiClient();
       const response = await apiClient.createEvent(formData);
+      
+      // 作成成功後、イベント詳細ページにリダイレクト
       router.push(`/events/${response.data.event_id}`);
-    } catch (err) {
-      setError(handleApiError(err));
+    } catch (error) {
+      setError(handleApiError(error));
     } finally {
       setLoading(false);
     }
@@ -170,47 +194,44 @@ export default function CreateEventPage() {
             {/* 基本情報 */}
             <div className="mb-8">
               <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">基本情報</h2>
-              
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-kmc-gray-700 mb-2">
-                    タイトル <span className="text-red-500">*</span>
+                  <label htmlFor="title" className="block text-sm font-medium text-kmc-gray-700 mb-2">
+                    イベントタイトル *
                   </label>
                   <input
                     type="text"
+                    id="title"
                     value={formData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
                     className="input-field w-full"
-                    placeholder="イベントのタイトルを入力"
-                    maxLength={200}
+                    required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-kmc-gray-700 mb-2">
+                  <label htmlFor="description" className="block text-sm font-medium text-kmc-gray-700 mb-2">
                     説明
                   </label>
                   <textarea
-                    value={formData.description || ''}
+                    id="description"
+                    value={formData.description}
                     onChange={(e) => handleInputChange('description', e.target.value)}
                     rows={4}
                     className="input-field w-full"
-                    placeholder="イベントの説明を入力"
-                    maxLength={1000}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-kmc-gray-700 mb-2">
+                  <label htmlFor="venue" className="block text-sm font-medium text-kmc-gray-700 mb-2">
                     会場
                   </label>
                   <input
                     type="text"
-                    value={formData.venue || ''}
+                    id="venue"
+                    value={formData.venue}
                     onChange={(e) => handleInputChange('venue', e.target.value)}
                     className="input-field w-full"
-                    placeholder="会場を入力"
-                    maxLength={200}
                   />
                 </div>
               </div>
@@ -218,10 +239,8 @@ export default function CreateEventPage() {
 
             {/* 参加可能な役割 */}
             <div className="mb-8">
-              <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">
-                参加可能な役割 <span className="text-red-500">*</span>
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">参加可能な役割</h2>
+              <div className="grid grid-cols-2 gap-3">
                 {userRoles.map((role) => (
                   <label key={role} className="flex items-center">
                     <input
@@ -239,42 +258,91 @@ export default function CreateEventPage() {
             {/* タグ */}
             <div className="mb-8">
               <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">タグ</h2>
-              <div className="flex gap-2 mb-3">
-                <input
-                  type="text"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                  className="input-field flex-1"
-                  placeholder="タグを入力"
-                />
-                <button
-                  type="button"
-                  onClick={addTag}
-                  className="btn-primary"
-                >
-                  追加
-                </button>
-              </div>
-              {formData.tags && formData.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {formData.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-kmc-100 text-kmc-700 rounded-full text-sm flex items-center gap-2"
-                    >
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => removeTag(tag)}
-                        className="text-kmc-600 hover:text-kmc-700"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
+              <div className="space-y-4">
+                {/* 既存タグの選択 */}
+                {availableTags.length > 0 && (
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-kmc-gray-600 mb-2">
+                      既存のタグから選択
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {availableTags.map((tag) => (
+                        <button
+                          key={tag.name}
+                          type="button"
+                          onClick={() => {
+                            if (!formData.tags?.includes(tag.name)) {
+                              setFormData(prev => ({
+                                ...prev,
+                                tags: [...(prev.tags || []), tag.name]
+                              }));
+                            }
+                          }}
+                          disabled={formData.tags?.includes(tag.name)}
+                          className={`px-3 py-1 rounded-full text-sm border ${
+                            formData.tags?.includes(tag.name)
+                              ? 'bg-kmc-500 text-white border-kmc-500'
+                              : 'bg-white text-kmc-700 border-kmc-300 hover:bg-kmc-50'
+                          }`}
+                        >
+                          {tag.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* 新規タグ作成 */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    placeholder="新しいタグを作成"
+                    className="input-field flex-1"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        createAndAddTag();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={createAndAddTag}
+                    className="btn-primary"
+                    disabled={!newTag.trim()}
+                  >
+                    作成
+                  </button>
                 </div>
-              )}
+                
+                {/* 選択されたタグの表示 */}
+                {formData.tags && formData.tags.length > 0 && (
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-kmc-gray-600 mb-2">
+                      選択されたタグ
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-kmc-100 text-kmc-800"
+                        >
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => removeTag(tag)}
+                            className="ml-2 text-kmc-600 hover:text-kmc-800"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* 日程調整 */}
@@ -282,23 +350,25 @@ export default function CreateEventPage() {
               <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">日程調整</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-kmc-gray-700 mb-2">
-                    日程調整タイプ
+                  <label htmlFor="poll_type" className="block text-sm font-medium text-kmc-gray-700 mb-2">
+                    調整タイプ
                   </label>
                   <select
+                    id="poll_type"
                     value={formData.poll_type}
                     onChange={(e) => handleInputChange('poll_type', e.target.value)}
                     className="input-field w-full"
                   >
                     <option value="date_select">日付選択</option>
+                    <option value="time_select">時間選択</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-kmc-gray-700 mb-2">
-                    日程候補
+                    候補日時
                   </label>
-                  <div className="flex gap-2 mb-3">
+                  <div className="flex gap-2">
                     <input
                       type="datetime-local"
                       value={newPollCandidate}
@@ -308,25 +378,25 @@ export default function CreateEventPage() {
                     <button
                       type="button"
                       onClick={addPollCandidate}
-                      className="btn-primary"
+                      className="btn-secondary"
                     >
                       追加
                     </button>
                   </div>
                   {formData.poll_candidates && formData.poll_candidates.length > 0 && (
-                    <div className="space-y-2">
-                      {formData.poll_candidates.map((candidate, index) => (
+                    <div className="mt-2 space-y-1">
+                      {formData.poll_candidates.map((candidate) => (
                         <div
-                          key={index}
-                          className="flex items-center justify-between p-2 bg-kmc-gray-50 rounded-md"
+                          key={candidate}
+                          className="flex items-center justify-between p-2 bg-kmc-gray-50 rounded"
                         >
                           <span className="text-sm">{new Date(candidate).toLocaleString('ja-JP')}</span>
                           <button
                             type="button"
                             onClick={() => removePollCandidate(candidate)}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-kmc-500 hover:text-kmc-700"
                           >
-                            削除
+                            ×
                           </button>
                         </div>
                       ))}
@@ -356,29 +426,14 @@ export default function CreateEventPage() {
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-kmc-gray-700 mb-2">
-                            役割
-                          </label>
-                          <select
-                            value={feeSetting.applicable_role}
-                            onChange={(e) => updateFeeSetting(index, 'applicable_role', e.target.value as UserRole)}
-                            className="input-field w-full"
-                          >
-                            {userRoles.map((role) => (
-                              <option key={role} value={role}>{userRoleLabels[role]}</option>
-                            ))}
-                          </select>
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-kmc-gray-700 mb-2">
                             世代
                           </label>
                           <input
-                            type="text"
-                            value={feeSetting.applicable_generation || ''}
-                            onChange={(e) => updateFeeSetting(index, 'applicable_generation', e.target.value)}
+                            type="number"
+                            value={feeSetting.applicable_generation}
+                            onChange={(e) => updateFeeSetting(index, 'applicable_generation', Number(e.target.value))}
                             className="input-field w-full"
-                            placeholder="例: 2023"
+                            placeholder="例: 2024"
                           />
                         </div>
                         
@@ -412,7 +467,7 @@ export default function CreateEventPage() {
             </div>
 
             {/* 送信ボタン */}
-            <div className="flex justify-end gap-4">
+            <div className="flex justify-end space-x-4">
               <Link
                 href="/events"
                 className="btn-secondary"
@@ -422,7 +477,7 @@ export default function CreateEventPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary"
               >
                 {loading ? '作成中...' : 'イベントを作成'}
               </button>
