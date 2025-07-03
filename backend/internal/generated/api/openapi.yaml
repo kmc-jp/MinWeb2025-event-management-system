@@ -182,6 +182,42 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: サーバーエラー
       summary: 現在のユーザー情報を取得
+  /api/users:
+    get:
+      operationId: listUsers
+      parameters:
+      - description: 特定の役割を持つユーザーのみを取得
+        explode: true
+        in: query
+        name: role
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: 特定の世代のユーザーのみを取得
+        explode: true
+        in: query
+        name: generation
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/UserSummary'
+                type: array
+          description: 成功
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: サーバーエラー
+      summary: ユーザー一覧を取得
   /api/users/{id}:
     get:
       operationId: getUser
@@ -725,6 +761,9 @@ components:
         allowed_roles:
         - null
         - null
+        allowed_users:
+        - allowed_users
+        - allowed_users
         description: description
         poll_type: date_select
         title: title
@@ -777,6 +816,11 @@ components:
           description: 日程候補（ISO 8601形式）
           items:
             format: date-time
+            type: string
+          type: array
+        allowed_users:
+          description: 参加可能なユーザーIDのリスト（空の場合は全ユーザーが参加可能）
+          items:
             type: string
           type: array
       required:

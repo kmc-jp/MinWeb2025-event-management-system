@@ -39,4 +39,7 @@ type CreateEventRequest struct {
 
 	// 日程候補（ISO 8601形式）
 	PollCandidates []time.Time `json:"poll_candidates,omitempty"`
+
+	// 参加可能なユーザーIDのリスト（空の場合は全ユーザーが参加可能）
+	AllowedUsers []string `json:"allowed_users,omitempty"`
 }

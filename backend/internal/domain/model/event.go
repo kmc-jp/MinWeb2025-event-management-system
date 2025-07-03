@@ -88,6 +88,7 @@ type Event struct {
 	Description  string
 	Status       EventStatus
 	AllowedRoles []UserRole
+	AllowedUsers []string
 	Tags         []Tag
 	Venue        string
 	SchedulePoll *SchedulePoll
@@ -100,7 +101,7 @@ type Event struct {
 
 // --- ファクトリ・振る舞い ---
 
-func NewEvent(organizer *User, title, description, venue string, allowedRoles []UserRole, tags []Tag, feeSettings []FeeSetting, pollType string, pollCandidates []time.Time) *Event {
+func NewEvent(organizer *User, title, description, venue string, allowedRoles []UserRole, allowedUsers []string, tags []Tag, feeSettings []FeeSetting, pollType string, pollCandidates []time.Time) *Event {
 	now := time.Now()
 	return &Event{
 		EventID:      uuid.New().String(),
@@ -109,6 +110,7 @@ func NewEvent(organizer *User, title, description, venue string, allowedRoles []
 		Description:  description,
 		Status:       EventStatusDraft,
 		AllowedRoles: allowedRoles,
+		AllowedUsers: allowedUsers,
 		Tags:         tags,
 		Venue:        venue,
 		SchedulePoll: &SchedulePoll{

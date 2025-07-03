@@ -90,6 +90,12 @@ export interface CreateEventRequest {
      * @memberof CreateEventRequest
      */
     'poll_candidates'?: Array<string>;
+    /**
+     * 参加可能なユーザーIDのリスト（空の場合は全ユーザーが参加可能）
+     * @type {Array<string>}
+     * @memberof CreateEventRequest
+     */
+    'allowed_users'?: Array<string>;
 }
 /**
  * 
@@ -1002,6 +1008,46 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
         },
         /**
          * 
+         * @summary ユーザー一覧を取得
+         * @param {string} [role] 特定の役割を持つユーザーのみを取得
+         * @param {string} [generation] 特定の世代のユーザーのみを取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        listUsers: async (role?: string, generation?: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/api/users`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            if (role !== undefined) {
+                localVarQueryParameter['role'] = role;
+            }
+
+            if (generation !== undefined) {
+                localVarQueryParameter['generation'] = generation;
+            }
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
          * @summary ユーザーから役割を削除
          * @param {string} userId 
          * @param {string} roleName 
@@ -1236,6 +1282,18 @@ export const DefaultApiFp = function(configuration?: Configuration) {
         },
         /**
          * 
+         * @summary ユーザー一覧を取得
+         * @param {string} [role] 特定の役割を持つユーザーのみを取得
+         * @param {string} [generation] 特定の世代のユーザーのみを取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async listUsers(role?: string, generation?: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<UserSummary>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.listUsers(role, generation, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
          * @summary ユーザーから役割を削除
          * @param {string} userId 
          * @param {string} roleName 
@@ -1400,6 +1458,17 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
         },
         /**
          * 
+         * @summary ユーザー一覧を取得
+         * @param {string} [role] 特定の役割を持つユーザーのみを取得
+         * @param {string} [generation] 特定の世代のユーザーのみを取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        listUsers(role?: string, generation?: string, options?: any): AxiosPromise<Array<UserSummary>> {
+            return localVarFp.listUsers(role, generation, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
          * @summary ユーザーから役割を削除
          * @param {string} userId 
          * @param {string} roleName 
@@ -1558,6 +1627,17 @@ export interface DefaultApiInterface {
      * @memberof DefaultApiInterface
      */
     listTags(options?: AxiosRequestConfig): AxiosPromise<Array<Tag>>;
+
+    /**
+     * 
+     * @summary ユーザー一覧を取得
+     * @param {string} [role] 特定の役割を持つユーザーのみを取得
+     * @param {string} [generation] 特定の世代のユーザーのみを取得
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApiInterface
+     */
+    listUsers(role?: string, generation?: string, options?: AxiosRequestConfig): AxiosPromise<Array<UserSummary>>;
 
     /**
      * 
@@ -1744,6 +1824,19 @@ export class DefaultApi extends BaseAPI implements DefaultApiInterface {
      */
     public listTags(options?: AxiosRequestConfig) {
         return DefaultApiFp(this.configuration).listTags(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary ユーザー一覧を取得
+     * @param {string} [role] 特定の役割を持つユーザーのみを取得
+     * @param {string} [generation] 特定の世代のユーザーのみを取得
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApi
+     */
+    public listUsers(role?: string, generation?: string, options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).listUsers(role, generation, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

@@ -174,6 +174,39 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/users:
+    get:
+      summary: ユーザー一覧を取得
+      operationId: listUsers
+      parameters:
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 特定の役割を持つユーザーのみを取得
+        - name: generation
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 特定の世代のユーザーのみを取得
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserSummary"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /api/users/{id}:
     get:
       summary: ユーザー情報を取得
@@ -691,6 +724,11 @@ components:
             type: string
             format: date-time
           description: 日程候補（ISO 8601形式）
+        allowed_users:
+          type: array
+          items:
+            type: string
+          description: 参加可能なユーザーIDのリスト（空の場合は全ユーザーが参加可能）
       required:
         - title
         - allowed_roles

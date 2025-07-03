@@ -81,6 +81,11 @@ func ListTags(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
+// ListUsers - ユーザー一覧を取得
+func ListUsers(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{})
+}
+
 // RemoveRoleFromUser - ユーザーから役割を削除
 func RemoveRoleFromUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})

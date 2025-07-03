@@ -38,3 +38,41 @@ func (uc *UserQueryUsecase) GetUser(ctx context.Context, userID string) (*UserDT
 		Generation: user.Generation,
 	}, nil
 }
+
+// ListUsers はユーザー一覧を取得
+func (uc *UserQueryUsecase) ListUsers(ctx context.Context, role, generation string) ([]*UserSummaryDTO, error) {
+	users, err := uc.UserRepo.FindAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var filteredUsers []*UserSummaryDTO
+	for _, user := range users {
+		// 役割フィルタ
+		if role != "" {
+			hasRole := false
+			for _, userRole := range user.Roles {
+				if string(userRole) == role {
+					hasRole = true
+					break
+				}
+			}
+			if !hasRole {
+				continue
+			}
+		}
+
+		// 世代フィルタ
+		if generation != "" && user.Generation != generation {
+			continue
+		}
+
+		filteredUsers = append(filteredUsers, &UserSummaryDTO{
+			UserID:     user.UserID,
+			Name:       user.Name,
+			Generation: user.Generation,
+		})
+	}
+
+	return filteredUsers, nil
+}

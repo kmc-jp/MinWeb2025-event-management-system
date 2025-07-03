@@ -15,6 +15,7 @@ type CreateEventCommand struct {
 	Description    string
 	Venue          string
 	AllowedRoles   []model.UserRole
+	AllowedUsers   []string
 	Tags           []model.Tag
 	FeeSettings    []model.FeeSetting
 	PollType       string
@@ -39,7 +40,7 @@ func (uc *EventCommandUsecase) CreateEvent(ctx context.Context, cmd *CreateEvent
 	if err != nil {
 		return "", err
 	}
-	event := model.NewEvent(organizer, cmd.Title, cmd.Description, cmd.Venue, cmd.AllowedRoles, cmd.Tags, cmd.FeeSettings, cmd.PollType, cmd.PollCandidates)
+	event := model.NewEvent(organizer, cmd.Title, cmd.Description, cmd.Venue, cmd.AllowedRoles, cmd.AllowedUsers, cmd.Tags, cmd.FeeSettings, cmd.PollType, cmd.PollCandidates)
 	if err := uc.EventRepo.Save(ctx, event); err != nil {
 		return "", err
 	}

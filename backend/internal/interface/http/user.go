@@ -36,6 +36,20 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
+// ListUsers はユーザー一覧取得エンドポイント
+func (h *UserHandler) ListUsers(c *gin.Context) {
+	role := c.Query("role")
+	generation := c.Query("generation")
+
+	users, err := h.userQueryUsecase.ListUsers(c.Request.Context(), role, generation)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, users)
+}
+
 // GetCurrentUser は現在のユーザー情報取得エンドポイント
 func (h *UserHandler) GetCurrentUser(c *gin.Context) {
 	// 認証情報からユーザーIDを取得（実際の実装では認証ミドルウェアから取得）
@@ -58,6 +72,7 @@ func (h *UserHandler) GetCurrentUser(c *gin.Context) {
 func (h *UserHandler) RegisterRoutes(r *gin.Engine) {
 	users := r.Group("/api/users")
 	{
+		users.GET("", h.ListUsers)
 		users.GET("/me", h.GetCurrentUser)
 		users.GET("/:id", h.GetUser)
 	}

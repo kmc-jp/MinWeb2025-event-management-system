@@ -14,21 +14,30 @@ export default function CreateEventPage() {
     description: '',
     venue: '',
     allowed_roles: [],
+    allowed_users: [],
     tags: [],
     fee_settings: [],
     poll_type: 'date_select',
     poll_candidates: []
-  });
+  } as CreateEventRequest);
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [availableTags, setAvailableTags] = useState<any[]>([]);
   const [newTag, setNewTag] = useState('');
   const [newPollCandidate, setNewPollCandidate] = useState('');
+  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+  const [selectedRole, setSelectedRole] = useState('');
+  const [selectedGeneration, setSelectedGeneration] = useState('');
 
   useEffect(() => {
     loadTags();
+    loadUsers();
   }, []);
+
+  useEffect(() => {
+    loadUsers();
+  }, [selectedRole, selectedGeneration]);
 
   const loadTags = async () => {
     try {
@@ -36,6 +45,15 @@ export default function CreateEventPage() {
       setAvailableTags(response.data);
     } catch (err) {
       console.error('Failed to load tags:', err);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const response = await (getApiClient() as any).listUsers(selectedRole || undefined, selectedGeneration || undefined);
+      setAvailableUsers(response.data);
+    } catch (err) {
+      console.error('Failed to load users:', err);
     }
   };
 
@@ -153,7 +171,11 @@ export default function CreateEventPage() {
 
     try {
       const apiClient = getApiClient();
-      const response = await apiClient.createEvent(formData);
+      const eventData = {
+        ...formData,
+        allowed_users: (formData as any).allowed_users || []
+      };
+      const response = await apiClient.createEvent(eventData);
       
       // 作成成功後、イベント詳細ページにリダイレクト
       router.push(`/events/${response.data.event_id}`);
@@ -252,6 +274,127 @@ export default function CreateEventPage() {
                     <span className="ml-2 text-sm text-kmc-gray-700">{userRoleLabels[role]}</span>
                   </label>
                 ))}
+              </div>
+            </div>
+
+            {/* 参加可能なユーザー */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">参加可能なユーザー</h2>
+              <div className="space-y-4">
+                {/* フィルタ */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-kmc-gray-700 mb-2">
+                      役割でフィルタ
+                    </label>
+                    <select
+                      value={selectedRole}
+                      onChange={(e) => setSelectedRole(e.target.value)}
+                      className="input-field w-full"
+                    >
+                      <option value="">全ての役割</option>
+                      <option value="admin">管理者</option>
+                      <option value="member">部員</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-kmc-gray-700 mb-2">
+                      世代でフィルタ
+                    </label>
+                    <select
+                      value={selectedGeneration}
+                      onChange={(e) => setSelectedGeneration(e.target.value)}
+                      className="input-field w-full"
+                    >
+                      <option value="">全ての世代</option>
+                      <option value="2023">2023年</option>
+                      <option value="2024">2024年</option>
+                    </select>
+                  </div>
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedRole('');
+                        setSelectedGeneration('');
+                        loadUsers();
+                      }}
+                      className="btn-secondary w-full"
+                    >
+                      フィルタクリア
+                    </button>
+                  </div>
+                </div>
+
+                {/* ユーザー一覧 */}
+                <div className="border border-kmc-gray-200 rounded-lg p-4 max-h-60 overflow-y-auto">
+                  {availableUsers.length === 0 ? (
+                    <p className="text-kmc-gray-500 text-center">ユーザーが見つかりません</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {availableUsers.map((user) => (
+                        <label key={user.user_id} className="flex items-center p-2 hover:bg-kmc-gray-50 rounded">
+                          <input
+                            type="checkbox"
+                            checked={(formData as any).allowed_users?.includes(user.user_id) || false}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  allowed_users: [...((prev as any).allowed_users || []), user.user_id]
+                                } as any));
+                              } else {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  allowed_users: (prev as any).allowed_users?.filter((id: string) => id !== user.user_id) || []
+                                } as any));
+                              }
+                            }}
+                            className="rounded border-kmc-gray-300 text-kmc-500 focus:ring-kmc-500"
+                          />
+                          <div className="ml-3">
+                            <span className="text-sm font-medium text-kmc-gray-900">{user.name}</span>
+                            <span className="text-xs text-kmc-gray-500 ml-2">({user.user_id} / {user.generation}年)</span>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 選択されたユーザー */}
+                {(formData as any).allowed_users && (formData as any).allowed_users.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-kmc-gray-600 mb-2">
+                      選択されたユーザー ({(formData as any).allowed_users.length}人)
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {(formData as any).allowed_users.map((userId: string) => {
+                        const user = availableUsers.find(u => u.user_id === userId);
+                        return (
+                          <span
+                            key={userId}
+                            className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-kmc-100 text-kmc-800"
+                          >
+                            {user ? `${user.name} (${user.generation}年)` : userId}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  allowed_users: (prev as any).allowed_users?.filter((id: string) => id !== userId) || []
+                                } as any));
+                              }}
+                              className="ml-2 text-kmc-600 hover:text-kmc-800"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

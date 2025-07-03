@@ -30,6 +30,7 @@ type CreateEventRequest struct {
 	Description    string             `json:"description"`
 	Venue          string             `json:"venue"`
 	AllowedRoles   []model.UserRole   `json:"allowed_roles"`
+	AllowedUsers   []string           `json:"allowed_users"`
 	Tags           []string           `json:"tags"`
 	FeeSettings    []model.FeeSetting `json:"fee_settings"`
 	PollType       string             `json:"poll_type"`
@@ -74,6 +75,7 @@ func (h *EventHandler) CreateEvent(c *gin.Context) {
 		Description:    req.Description,
 		Venue:          req.Venue,
 		AllowedRoles:   req.AllowedRoles,
+		AllowedUsers:   req.AllowedUsers,
 		Tags:           tags,
 		FeeSettings:    req.FeeSettings,
 		PollType:       req.PollType,

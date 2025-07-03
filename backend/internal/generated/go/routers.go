@@ -157,6 +157,13 @@ var routes = Routes{
 	},
 
 	{
+		"ListUsers",
+		http.MethodGet,
+		"/api/users",
+		ListUsers,
+	},
+
+	{
 		"RemoveRoleFromUser",
 		http.MethodDelete,
 		"/api/users/:user_id/roles",

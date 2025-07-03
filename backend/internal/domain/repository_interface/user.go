@@ -12,6 +12,9 @@ type UserRepository interface {
 	// FindByID は指定されたIDのユーザーを取得します
 	FindByID(ctx context.Context, userID string) (*model.User, error)
 
+	// FindAll は全てのユーザーを取得します
+	FindAll(ctx context.Context) ([]*model.User, error)
+
 	// Save はユーザー情報を保存または更新します
 	Save(ctx context.Context, user *model.User) error
 }

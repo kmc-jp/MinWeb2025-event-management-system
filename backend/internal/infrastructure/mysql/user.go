@@ -53,6 +53,48 @@ func (r *MySQLUserRepository) FindByID(ctx context.Context, userID string) (*mod
 	return &user, nil
 }
 
+// FindAll は全てのユーザーを取得
+func (r *MySQLUserRepository) FindAll(ctx context.Context) ([]*model.User, error) {
+	query := "SELECT user_id, name, generation FROM users ORDER BY name"
+
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*model.User
+	for rows.Next() {
+		var user model.User
+		if err := rows.Scan(&user.UserID, &user.Name, &user.Generation); err != nil {
+			return nil, err
+		}
+
+		// ユーザーの役割を取得
+		rolesQuery := "SELECT role FROM user_roles WHERE user_id = ?"
+		roleRows, err := r.db.QueryContext(ctx, rolesQuery, user.UserID)
+		if err != nil {
+			return nil, err
+		}
+
+		var roles []model.UserRole
+		for roleRows.Next() {
+			var roleStr string
+			if err := roleRows.Scan(&roleStr); err != nil {
+				roleRows.Close()
+				return nil, err
+			}
+			roles = append(roles, model.UserRole(roleStr))
+		}
+		roleRows.Close()
+
+		user.Roles = roles
+		users = append(users, &user)
+	}
+
+	return users, nil
+}
+
 // Save はユーザー情報を保存または更新
 func (r *MySQLUserRepository) Save(ctx context.Context, user *model.User) error {
 	// トランザクション開始

@@ -169,6 +169,41 @@ class MockApiClient {
     };
   }
 
+  // ユーザー一覧を取得（Mock）
+  async listUsers(role?: string, generation?: string) {
+    if (!this.mockUser) {
+      throw new Error('ユーザーが認証されていません');
+    }
+
+    const mockUsers = [
+      { user_id: 'user1', name: '田中太郎', generation: '2023' },
+      { user_id: 'user2', name: '佐藤花子', generation: '2023' },
+      { user_id: 'user3', name: '鈴木一郎', generation: '2024' },
+      { user_id: 'user4', name: '高橋美咲', generation: '2024' },
+      { user_id: 'admin1', name: '管理者', generation: '2023' },
+    ];
+
+    let filteredUsers = mockUsers;
+
+    // 役割フィルタ
+    if (role) {
+      if (role === 'admin') {
+        filteredUsers = filteredUsers.filter(user => user.user_id === 'admin1');
+      } else if (role === 'member') {
+        filteredUsers = filteredUsers.filter(user => user.user_id !== 'admin1');
+      }
+    }
+
+    // 世代フィルタ
+    if (generation) {
+      filteredUsers = filteredUsers.filter(user => user.generation === generation);
+    }
+
+    return {
+      data: filteredUsers
+    };
+  }
+
   // ユーザー情報を取得（Mock）
   async getUser(id: string) {
     if (!this.mockUser) {
