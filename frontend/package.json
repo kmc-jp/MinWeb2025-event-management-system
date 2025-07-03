@@ -9,7 +9,8 @@
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "generate-api-client": "openapi-ts -i ../api/openapi.yaml -o src/lib/api --client axios"
+    "generate-api": "../scripts/generate-api.sh frontend",
+    "export": "next build && next export"
   },
   "dependencies": {
     "next": "14.0.4",

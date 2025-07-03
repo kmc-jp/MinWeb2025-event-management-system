@@ -1,63 +1,64 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient, handleApiError } from '../../../../lib/api';
 import { EventDetails } from '../../../../generated';
 
 export default function EventDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const eventId = params.id as string;
   
   const [event, setEvent] = useState<EventDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchEventDetails = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const response = await apiClient.getEventDetails(eventId);
-        setEvent(response.data);
-      } catch (err) {
-        setError(handleApiError(err));
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchEventDetails = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await apiClient.getEventDetails(eventId);
+      setEvent(response.data);
+    } catch (err) {
+      setError(handleApiError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     if (eventId) {
       fetchEventDetails();
     }
   }, [eventId]);
 
-  const getStatusLabel = (status: string) => {
-    const statusMap: { [key: string]: string } = {
-      'DRAFT': '下書き',
-      'SCHEDULE_POLLING': '日程調整中',
-      'CONFIRMED': '確定済み',
-      'FINISHED': '終了',
-      'CANCELLED': 'キャンセル'
-    };
-    return statusMap[status] || status;
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'DRAFT': return 'bg-gray-100 text-gray-800';
+      case 'SCHEDULE_POLLING': return 'bg-blue-100 text-blue-800';
+      case 'CONFIRMED': return 'bg-green-100 text-green-800';
+      case 'FINISHED': return 'bg-purple-100 text-purple-800';
+      case 'CANCELLED': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
-  const getStatusColor = (status: string) => {
-    const colorMap: { [key: string]: string } = {
-      'DRAFT': 'bg-gray-100 text-gray-800',
-      'SCHEDULE_POLLING': 'bg-blue-100 text-blue-800',
-      'CONFIRMED': 'bg-green-100 text-green-800',
-      'FINISHED': 'bg-purple-100 text-purple-800',
-      'CANCELLED': 'bg-red-100 text-red-800'
-    };
-    return colorMap[status] || 'bg-gray-100 text-gray-800';
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'DRAFT': return '下書き';
+      case 'SCHEDULE_POLLING': return '日程調整中';
+      case 'CONFIRMED': return '確定';
+      case 'FINISHED': return '終了';
+      case 'CANCELLED': return 'キャンセル';
+      default: return status;
+    }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ja-JP', {
+    return new Date(dateString).toLocaleString('ja-JP', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -67,17 +68,20 @@ export default function EventDetailPage() {
   };
 
   const formatMoney = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('ja-JP', {
-      style: 'currency',
-      currency: currency
-    }).format(amount);
+    if (currency === 'JPY') {
+      return `¥${amount.toLocaleString()}`;
+    }
+    return `${amount} ${currency}`;
   };
 
   if (loading) {
     return (
-      <div style={{ maxWidth: 800, margin: "2rem auto", padding: "0 1rem" }}>
-        <div style={{ textAlign: "center", padding: "2rem" }}>
-          読み込み中...
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">読み込み中...</p>
+          </div>
         </div>
       </div>
     );
@@ -85,27 +89,18 @@ export default function EventDetailPage() {
 
   if (error) {
     return (
-      <div style={{ maxWidth: 800, margin: "2rem auto", padding: "0 1rem" }}>
-        <div style={{ 
-          padding: "1rem", 
-          backgroundColor: "#fee", 
-          border: "1px solid #fcc", 
-          borderRadius: "0.5rem", 
-          marginBottom: "1rem",
-          color: "#c33"
-        }}>
-          {error}
-        </div>
-        <div style={{ textAlign: "center" }}>
-          <Link 
-            href="/events" 
-            style={{
-              color: "#0070f3",
-              textDecoration: "none"
-            }}
-          >
-            ← イベント一覧に戻る
-          </Link>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-red-50 border border-red-200 rounded-md p-6">
+            <h2 className="text-lg font-medium text-red-800 mb-2">エラーが発生しました</h2>
+            <p className="text-red-700 mb-4">{error}</p>
+            <Link
+              href="/events"
+              className="text-blue-600 hover:text-blue-800 font-medium"
+            >
+              ← イベント一覧に戻る
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -113,187 +108,154 @@ export default function EventDetailPage() {
 
   if (!event) {
     return (
-      <div style={{ maxWidth: 800, margin: "2rem auto", padding: "0 1rem" }}>
-        <div style={{ textAlign: "center", padding: "2rem" }}>
-          イベントが見つかりません
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <p className="text-gray-500 text-lg">イベントが見つかりません</p>
+            <Link
+              href="/events"
+              className="text-blue-600 hover:text-blue-800 font-medium mt-4 inline-block"
+            >
+              ← イベント一覧に戻る
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: 800, margin: "2rem auto", padding: "0 1rem" }}>
-      {/* ヘッダー */}
-      <div style={{ marginBottom: "2rem" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-          <h1 style={{ margin: 0, fontSize: "2rem" }}>{event.title}</h1>
-          <span 
-            style={{
-              padding: "0.5rem 1rem",
-              borderRadius: "1rem",
-              fontSize: "0.875rem",
-              fontWeight: "bold"
-            }}
-            className={getStatusColor(event.status)}
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* ヘッダー */}
+        <div className="mb-8">
+          <Link
+            href="/events"
+            className="text-blue-600 hover:text-blue-800 font-medium mb-4 inline-block"
           >
-            {getStatusLabel(event.status)}
-          </span>
-        </div>
-        
-        <div style={{ color: "#666", marginBottom: "1rem" }}>
-          <p style={{ margin: "0.5rem 0" }}>
-            主催者: {event.organizer_name}
-          </p>
-          <p style={{ margin: "0.5rem 0" }}>
-            作成日: {formatDate(event.created_at)}
-          </p>
-          {event.updated_at && (
-            <p style={{ margin: "0.5rem 0" }}>
-              更新日: {formatDate(event.updated_at)}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* イベント詳細 */}
-      <div style={{ marginBottom: "2rem" }}>
-        {event.description && (
-          <div style={{ marginBottom: "2rem" }}>
-            <h2 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>説明</h2>
-            <div style={{ 
-              padding: "1rem", 
-              backgroundColor: "#f8f9fa", 
-              borderRadius: "0.5rem",
-              whiteSpace: "pre-wrap"
-            }}>
-              {event.description}
-            </div>
-          </div>
-        )}
-
-        {event.venue && (
-          <div style={{ marginBottom: "2rem" }}>
-            <h2 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>会場</h2>
-            <p style={{ fontSize: "1.1rem" }}>{event.venue}</p>
-          </div>
-        )}
-
-        {event.allowed_roles && event.allowed_roles.length > 0 && (
-          <div style={{ marginBottom: "2rem" }}>
-            <h2 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>参加可能な役割</h2>
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-              {event.allowed_roles.map((role, index) => (
-                <span 
-                  key={index}
-                  style={{
-                    padding: "0.25rem 0.75rem",
-                    backgroundColor: "#e3f2fd",
-                    color: "#1976d2",
-                    borderRadius: "1rem",
-                    fontSize: "0.875rem"
-                  }}
-                >
-                  {role}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {event.tags && event.tags.length > 0 && (
-          <div style={{ marginBottom: "2rem" }}>
-            <h2 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>タグ</h2>
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-              {event.tags.map((tag, index) => (
-                <span 
-                  key={index}
-                  style={{
-                    padding: "0.25rem 0.75rem",
-                    backgroundColor: "#f3e5f5",
-                    color: "#7b1fa2",
-                    borderRadius: "1rem",
-                    fontSize: "0.875rem"
-                  }}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {event.fee_settings && event.fee_settings.length > 0 && (
-          <div style={{ marginBottom: "2rem" }}>
-            <h2 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>料金設定</h2>
-            <div style={{ display: "grid", gap: "1rem" }}>
-              {event.fee_settings.map((feeSetting, index) => (
-                <div 
-                  key={index}
-                  style={{
-                    padding: "1rem",
-                    border: "1px solid #ddd",
-                    borderRadius: "0.5rem",
-                    backgroundColor: "white"
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                      <p style={{ margin: "0 0 0.25rem 0", fontWeight: "bold" }}>
-                        {feeSetting.applicable_role}
-                      </p>
-                      {feeSetting.applicable_generation && (
-                        <p style={{ margin: 0, color: "#666", fontSize: "0.875rem" }}>
-                          世代: {feeSetting.applicable_generation}
-                        </p>
-                      )}
-                    </div>
-                    <div style={{ fontSize: "1.25rem", fontWeight: "bold", color: "#0070f3" }}>
-                      {formatMoney(feeSetting.fee.amount, feeSetting.fee.currency)}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* アクションボタン */}
-      <div style={{ 
-        display: "flex", 
-        gap: "1rem", 
-        justifyContent: "center",
-        marginBottom: "2rem"
-      }}>
-        <Link 
-          href="/events" 
-          style={{
-            padding: "0.75rem 1.5rem",
-            border: "1px solid #0070f3",
-            color: "#0070f3",
-            textDecoration: "none",
-            borderRadius: "0.5rem",
-            fontWeight: "bold"
-          }}
-        >
-          イベント一覧に戻る
-        </Link>
-        
-        {event.status === 'DRAFT' && (
-          <Link 
-            href={`/events/${event.event_id}/edit`}
-            style={{
-              padding: "0.75rem 1.5rem",
-              backgroundColor: "#0070f3",
-              color: "white",
-              textDecoration: "none",
-              borderRadius: "0.5rem",
-              fontWeight: "bold"
-            }}
-          >
-            編集
+            ← イベント一覧に戻る
           </Link>
-        )}
+          
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{event.title}</h1>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(event.status)}`}>
+                {getStatusText(event.status)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* メインコンテンツ */}
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="p-6">
+            {/* 基本情報 */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">基本情報</h2>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">主催者</label>
+                  <p className="text-gray-900">{event.organizer_name}</p>
+                </div>
+                {event.venue && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">会場</label>
+                    <p className="text-gray-900">{event.venue}</p>
+                  </div>
+                )}
+                <div>
+                  <label className="text-sm font-medium text-gray-500">作成日時</label>
+                  <p className="text-gray-900">{formatDate(event.created_at)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">更新日時</label>
+                  <p className="text-gray-900">{formatDate(event.updated_at)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 説明 */}
+            {event.description && (
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">説明</h2>
+                <p className="text-gray-700 whitespace-pre-wrap">{event.description}</p>
+              </div>
+            )}
+
+            {/* 参加可能な役割 */}
+            {event.allowed_roles && event.allowed_roles.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">参加可能な役割</h2>
+                <div className="flex flex-wrap gap-2">
+                  {event.allowed_roles.map((role, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                    >
+                      {role}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* タグ */}
+            {event.tags && event.tags.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">タグ</h2>
+                <div className="flex flex-wrap gap-2">
+                  {event.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 料金設定 */}
+            {event.fee_settings && event.fee_settings.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">料金設定</h2>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          役割
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          世代
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          料金
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {event.fee_settings.map((feeSetting, index) => (
+                        <tr key={index}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {feeSetting.applicable_role}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {feeSetting.applicable_generation || '全世代'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {formatMoney(feeSetting.fee.amount, feeSetting.fee.currency)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
