@@ -1,20 +1,24 @@
 import '../globals.css';
+import { ProtectedRoute } from '../../lib/auth';
 
 export const metadata = {
   title: 'イベント管理システム',
   description: 'イベントの作成・管理・参加を簡単に行えるシステム',
 }
 
-export default function RootLayout({
+export default function MainLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    <html lang="ja">
-      <body className="font-sans antialiased">
+    <ProtectedRoute>
+      <MainLayoutContent>
         {children}
-      </body>
-    </html>
-  )
+      </MainLayoutContent>
+    </ProtectedRoute>
+  );
 }
+
+// クライアントコンポーネントを別ファイルに分離
+import MainLayoutContent from './MainLayoutContent';
