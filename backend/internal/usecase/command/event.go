@@ -15,11 +15,29 @@ type CreateEventCommand struct {
 	Description    string
 	Venue          string
 	AllowedRoles   []model.UserRole
+	EditableRoles  []model.UserRole
 	AllowedUsers   []string
 	Tags           []model.Tag
 	FeeSettings    []model.FeeSetting
 	PollType       string
 	PollCandidates []time.Time
+}
+
+// UpdateEventCommand はイベント更新のコマンドを表します
+type UpdateEventCommand struct {
+	EventID       string
+	Title         string
+	Description   string
+	Venue         string
+	AllowedRoles  []model.UserRole
+	EditableRoles []model.UserRole
+	Tags          []model.Tag
+	FeeSettings   []model.FeeSetting
+}
+
+// DeleteEventCommand はイベント削除のコマンドを表します
+type DeleteEventCommand struct {
+	EventID string
 }
 
 // EventCommandUsecase はイベントコマンドのユースケースを実装します
@@ -40,11 +58,31 @@ func (uc *EventCommandUsecase) CreateEvent(ctx context.Context, cmd *CreateEvent
 	if err != nil {
 		return "", err
 	}
-	event := model.NewEvent(organizer, cmd.Title, cmd.Description, cmd.Venue, cmd.AllowedRoles, cmd.AllowedUsers, cmd.Tags, cmd.FeeSettings, cmd.PollType, cmd.PollCandidates)
+	event := model.NewEvent(organizer, cmd.Title, cmd.Description, cmd.Venue, cmd.AllowedRoles, cmd.EditableRoles, cmd.AllowedUsers, cmd.Tags, cmd.FeeSettings, cmd.PollType, cmd.PollCandidates)
 	if err := uc.EventRepo.Save(ctx, event); err != nil {
 		return "", err
 	}
 	return event.EventID, nil
+}
+
+// UpdateEvent はイベントを更新します
+func (uc *EventCommandUsecase) UpdateEvent(ctx context.Context, cmd *UpdateEventCommand) error {
+	event, err := uc.EventRepo.FindByID(ctx, cmd.EventID)
+	if err != nil {
+		return err
+	}
+
+	event.UpdateDetails(cmd.Title, cmd.Description, cmd.Venue, cmd.AllowedRoles, cmd.EditableRoles, cmd.Tags, cmd.FeeSettings)
+
+	if err := uc.EventRepo.Save(ctx, event); err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteEvent はイベントを削除します
+func (uc *EventCommandUsecase) DeleteEvent(ctx context.Context, cmd *DeleteEventCommand) error {
+	return uc.EventRepo.Delete(ctx, cmd.EventID)
 }
 
 // 他のコマンド（Update, Publish, Cancel, FinalizeSchedule など）も同様に追加可能

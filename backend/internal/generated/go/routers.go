@@ -94,6 +94,13 @@ var routes = Routes{
 	},
 
 	{
+		"DeleteEvent",
+		http.MethodDelete,
+		"/api/events/:id",
+		DeleteEvent,
+	},
+
+	{
 		"DeleteRole",
 		http.MethodDelete,
 		"/api/roles/:role_name",
@@ -168,6 +175,13 @@ var routes = Routes{
 		http.MethodDelete,
 		"/api/users/:user_id/roles",
 		RemoveRoleFromUser,
+	},
+
+	{
+		"UpdateEvent",
+		http.MethodPut,
+		"/api/events/:id",
+		UpdateEvent,
 	},
 
 	{

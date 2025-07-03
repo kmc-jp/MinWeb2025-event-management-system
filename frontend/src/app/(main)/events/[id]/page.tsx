@@ -155,6 +155,16 @@ export default function EventDetailPage() {
                 {getStatusText(event.status)}
               </span>
             </div>
+            
+            {/* 編集ボタン */}
+            <div className="flex space-x-2">
+              <Link
+                href={`/events/${eventId}/edit`}
+                className="btn-primary"
+              >
+                編集
+              </Link>
+            </div>
           </div>
         </div>
       </header>
@@ -188,6 +198,22 @@ export default function EventDetailPage() {
                       <span
                         key={role}
                         className="px-2 py-1 bg-kmc-100 text-kmc-700 rounded-full text-xs font-medium"
+                      >
+                        {role}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {event.editable_roles && event.editable_roles.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-kmc-gray-700 mb-2">編集可能な役割</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {event.editable_roles.map((role) => (
+                      <span
+                        key={role}
+                        className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium"
                       >
                         {role}
                       </span>

@@ -67,6 +67,12 @@ export interface CreateEventRequest {
      */
     'allowed_roles': Array<string>;
     /**
+     * 編集可能な役割
+     * @type {Array<string>}
+     * @memberof CreateEventRequest
+     */
+    'editable_roles'?: Array<string>;
+    /**
      * タグ
      * @type {Array<string>}
      * @memberof CreateEventRequest
@@ -90,12 +96,6 @@ export interface CreateEventRequest {
      * @memberof CreateEventRequest
      */
     'poll_candidates'?: Array<string>;
-    /**
-     * 参加可能なユーザーIDのリスト（空の場合は全ユーザーが参加可能）
-     * @type {Array<string>}
-     * @memberof CreateEventRequest
-     */
-    'allowed_users'?: Array<string>;
 }
 /**
  * 
@@ -184,6 +184,12 @@ export interface EventDetails {
      * @memberof EventDetails
      */
     'allowed_roles'?: Array<string>;
+    /**
+     * 編集可能な役割
+     * @type {Array<string>}
+     * @memberof EventDetails
+     */
+    'editable_roles'?: Array<string>;
     /**
      * タグ
      * @type {Array<string>}
@@ -479,6 +485,55 @@ export interface Tag {
 /**
  * 
  * @export
+ * @interface UpdateEventRequest
+ */
+export interface UpdateEventRequest {
+    /**
+     * イベントタイトル
+     * @type {string}
+     * @memberof UpdateEventRequest
+     */
+    'title': string;
+    /**
+     * イベントの説明
+     * @type {string}
+     * @memberof UpdateEventRequest
+     */
+    'description'?: string;
+    /**
+     * 会場
+     * @type {string}
+     * @memberof UpdateEventRequest
+     */
+    'venue'?: string;
+    /**
+     * 参加可能な役割
+     * @type {Array<string>}
+     * @memberof UpdateEventRequest
+     */
+    'allowed_roles': Array<string>;
+    /**
+     * 編集可能な役割
+     * @type {Array<string>}
+     * @memberof UpdateEventRequest
+     */
+    'editable_roles': Array<string>;
+    /**
+     * タグ
+     * @type {Array<string>}
+     * @memberof UpdateEventRequest
+     */
+    'tags'?: Array<string>;
+    /**
+     * 料金設定
+     * @type {Array<FeeSetting>}
+     * @memberof UpdateEventRequest
+     */
+    'fee_settings'?: Array<FeeSetting>;
+}
+/**
+ * 
+ * @export
  * @interface UpdateRoleRequest
  */
 export interface UpdateRoleRequest {
@@ -694,6 +749,40 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
             localVarRequestOptions.data = serializeDataIfNeeded(createTagRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary イベントを削除
+         * @param {string} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        deleteEvent: async (id: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('deleteEvent', 'id', id)
+            const localVarPath = `/api/events/{id}`
+                .replace(`{${"id"}}`, encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'DELETE', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -1089,6 +1178,46 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
         },
         /**
          * 
+         * @summary イベントを更新
+         * @param {string} id 
+         * @param {UpdateEventRequest} updateEventRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        updateEvent: async (id: string, updateEventRequest: UpdateEventRequest, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('updateEvent', 'id', id)
+            // verify required parameter 'updateEventRequest' is not null or undefined
+            assertParamExists('updateEvent', 'updateEventRequest', updateEventRequest)
+            const localVarPath = `/api/events/{id}`
+                .replace(`{${"id"}}`, encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'PUT', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(updateEventRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
          * @summary 役割を更新
          * @param {string} roleName 
          * @param {UpdateRoleRequest} updateRoleRequest 
@@ -1180,6 +1309,17 @@ export const DefaultApiFp = function(configuration?: Configuration) {
          */
         async createTag(createTagRequest: CreateTagRequest, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Tag>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.createTag(createTagRequest, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary イベントを削除
+         * @param {string} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async deleteEvent(id: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.deleteEvent(id, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -1306,6 +1446,18 @@ export const DefaultApiFp = function(configuration?: Configuration) {
         },
         /**
          * 
+         * @summary イベントを更新
+         * @param {string} id 
+         * @param {UpdateEventRequest} updateEventRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async updateEvent(id: string, updateEventRequest: UpdateEventRequest, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<EventDetails>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.updateEvent(id, updateEventRequest, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
          * @summary 役割を更新
          * @param {string} roleName 
          * @param {UpdateRoleRequest} updateRoleRequest 
@@ -1366,6 +1518,16 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
          */
         createTag(createTagRequest: CreateTagRequest, options?: any): AxiosPromise<Tag> {
             return localVarFp.createTag(createTagRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary イベントを削除
+         * @param {string} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        deleteEvent(id: string, options?: any): AxiosPromise<void> {
+            return localVarFp.deleteEvent(id, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -1480,6 +1642,17 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
         },
         /**
          * 
+         * @summary イベントを更新
+         * @param {string} id 
+         * @param {UpdateEventRequest} updateEventRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        updateEvent(id: string, updateEventRequest: UpdateEventRequest, options?: any): AxiosPromise<EventDetails> {
+            return localVarFp.updateEvent(id, updateEventRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
          * @summary 役割を更新
          * @param {string} roleName 
          * @param {UpdateRoleRequest} updateRoleRequest 
@@ -1538,6 +1711,16 @@ export interface DefaultApiInterface {
      * @memberof DefaultApiInterface
      */
     createTag(createTagRequest: CreateTagRequest, options?: AxiosRequestConfig): AxiosPromise<Tag>;
+
+    /**
+     * 
+     * @summary イベントを削除
+     * @param {string} id 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApiInterface
+     */
+    deleteEvent(id: string, options?: AxiosRequestConfig): AxiosPromise<void>;
 
     /**
      * 
@@ -1652,6 +1835,17 @@ export interface DefaultApiInterface {
 
     /**
      * 
+     * @summary イベントを更新
+     * @param {string} id 
+     * @param {UpdateEventRequest} updateEventRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApiInterface
+     */
+    updateEvent(id: string, updateEventRequest: UpdateEventRequest, options?: AxiosRequestConfig): AxiosPromise<EventDetails>;
+
+    /**
+     * 
      * @summary 役割を更新
      * @param {string} roleName 
      * @param {UpdateRoleRequest} updateRoleRequest 
@@ -1717,6 +1911,18 @@ export class DefaultApi extends BaseAPI implements DefaultApiInterface {
      */
     public createTag(createTagRequest: CreateTagRequest, options?: AxiosRequestConfig) {
         return DefaultApiFp(this.configuration).createTag(createTagRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary イベントを削除
+     * @param {string} id 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApi
+     */
+    public deleteEvent(id: string, options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).deleteEvent(id, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -1850,6 +2056,19 @@ export class DefaultApi extends BaseAPI implements DefaultApiInterface {
      */
     public removeRoleFromUser(userId: string, roleName: string, options?: AxiosRequestConfig) {
         return DefaultApiFp(this.configuration).removeRoleFromUser(userId, roleName, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary イベントを更新
+     * @param {string} id 
+     * @param {UpdateEventRequest} updateEventRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApi
+     */
+    public updateEvent(id: string, updateEventRequest: UpdateEventRequest, options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).updateEvent(id, updateEventRequest, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

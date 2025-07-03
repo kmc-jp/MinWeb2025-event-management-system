@@ -28,6 +28,9 @@ type CreateEventRequest struct {
 	// 参加可能な役割
 	AllowedRoles []string `json:"allowed_roles"`
 
+	// 編集可能な役割
+	EditableRoles []string `json:"editable_roles,omitempty"`
+
 	// タグ
 	Tags []string `json:"tags,omitempty"`
 
@@ -39,7 +42,4 @@ type CreateEventRequest struct {
 
 	// 日程候補（ISO 8601形式）
 	PollCandidates []time.Time `json:"poll_candidates,omitempty"`
-
-	// 参加可能なユーザーIDのリスト（空の場合は全ユーザーが参加可能）
-	AllowedUsers []string `json:"allowed_users,omitempty"`
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, UserRole } from '../generated/api';
+import { User } from '../generated/api';
 
 // 認証コンテキストの型定義
 interface AuthContextType {
@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser({
               user_id: mockUser.user_id,
               name: mockUser.name,
-              roles: mockUser.roles as UserRole[],
+              roles: mockUser.roles as string[],
               generation: mockUser.generation,
             });
           } catch (error) {

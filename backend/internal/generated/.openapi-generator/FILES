@@ -18,6 +18,7 @@ go/model_paginated_event_list.go
 go/model_role.go
 go/model_role_details.go
 go/model_tag.go
+go/model_update_event_request.go
 go/model_update_role_request.go
 go/model_user.go
 go/model_user_summary.go

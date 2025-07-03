@@ -82,37 +82,39 @@ func NewTagEntity(name, createdBy string) *TagEntity {
 // Event: イベント集約
 
 type Event struct {
-	EventID      string
-	Organizer    *User
-	Title        string
-	Description  string
-	Status       EventStatus
-	AllowedRoles []UserRole
-	AllowedUsers []string
-	Tags         []Tag
-	Venue        string
-	SchedulePoll *SchedulePoll
-	FeeSettings  []FeeSetting
-	Comments     []Comment
-	EventReports []EventReport
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	EventID       string
+	Organizer     *User
+	Title         string
+	Description   string
+	Status        EventStatus
+	AllowedRoles  []UserRole
+	EditableRoles []UserRole
+	AllowedUsers  []string
+	Tags          []Tag
+	Venue         string
+	SchedulePoll  *SchedulePoll
+	FeeSettings   []FeeSetting
+	Comments      []Comment
+	EventReports  []EventReport
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 // --- ファクトリ・振る舞い ---
 
-func NewEvent(organizer *User, title, description, venue string, allowedRoles []UserRole, allowedUsers []string, tags []Tag, feeSettings []FeeSetting, pollType string, pollCandidates []time.Time) *Event {
+func NewEvent(organizer *User, title, description, venue string, allowedRoles, editableRoles []UserRole, allowedUsers []string, tags []Tag, feeSettings []FeeSetting, pollType string, pollCandidates []time.Time) *Event {
 	now := time.Now()
 	return &Event{
-		EventID:      uuid.New().String(),
-		Organizer:    organizer,
-		Title:        title,
-		Description:  description,
-		Status:       EventStatusDraft,
-		AllowedRoles: allowedRoles,
-		AllowedUsers: allowedUsers,
-		Tags:         tags,
-		Venue:        venue,
+		EventID:       uuid.New().String(),
+		Organizer:     organizer,
+		Title:         title,
+		Description:   description,
+		Status:        EventStatusDraft,
+		AllowedRoles:  allowedRoles,
+		EditableRoles: editableRoles,
+		AllowedUsers:  allowedUsers,
+		Tags:          tags,
+		Venue:         venue,
 		SchedulePoll: &SchedulePoll{
 			PollType:       pollType,
 			CandidateDates: pollCandidates,
@@ -126,11 +128,12 @@ func NewEvent(organizer *User, title, description, venue string, allowedRoles []
 	}
 }
 
-func (e *Event) UpdateDetails(title, description, venue string, allowedRoles []UserRole, tags []Tag, feeSettings []FeeSetting) {
+func (e *Event) UpdateDetails(title, description, venue string, allowedRoles, editableRoles []UserRole, tags []Tag, feeSettings []FeeSetting) {
 	e.Title = title
 	e.Description = description
 	e.Venue = venue
 	e.AllowedRoles = allowedRoles
+	e.EditableRoles = editableRoles
 	e.Tags = tags
 	e.FeeSettings = feeSettings
 	e.UpdatedAt = time.Now()

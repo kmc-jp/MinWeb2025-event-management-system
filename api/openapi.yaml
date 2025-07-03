@@ -144,6 +144,104 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+    put:
+      summary: イベントを更新
+      operationId: updateEvent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateEventRequest"
+      responses:
+        "200":
+          description: イベント更新成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetails"
+        "400":
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: 認証エラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: イベントが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      summary: イベントを削除
+      operationId: deleteEvent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: イベント削除成功
+        "400":
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: 認証エラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: イベントが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /api/users/me:
     get:
       summary: 現在のユーザー情報を取得
@@ -632,6 +730,11 @@ components:
           items:
             $ref: "#/components/schemas/UserRole"
           description: 参加可能な役割
+        editable_roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserRole"
+          description: 編集可能な役割
         tags:
           type: array
           items:
@@ -704,6 +807,11 @@ components:
           items:
             $ref: "#/components/schemas/UserRole"
           description: 参加可能な役割
+        editable_roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserRole"
+          description: 編集可能な役割
         tags:
           type: array
           items:
@@ -724,11 +832,7 @@ components:
             type: string
             format: date-time
           description: 日程候補（ISO 8601形式）
-        allowed_users:
-          type: array
-          items:
-            type: string
-          description: 参加可能なユーザーIDのリスト（空の場合は全ユーザーが参加可能）
+
       required:
         - title
         - allowed_roles
@@ -742,6 +846,47 @@ components:
           description: 作成されたイベントのID
       required:
         - event_id
+
+    UpdateEventRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: イベントタイトル
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          description: イベントの説明
+          maxLength: 1000
+        venue:
+          type: string
+          description: 会場
+          maxLength: 200
+        allowed_roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserRole"
+          description: 参加可能な役割
+        editable_roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserRole"
+          description: 編集可能な役割
+        tags:
+          type: array
+          items:
+            type: string
+          description: タグ
+        fee_settings:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeeSetting"
+          description: 料金設定
+      required:
+        - title
+        - allowed_roles
+        - editable_roles
 
     # ユーザー関連
     User:

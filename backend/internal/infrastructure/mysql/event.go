@@ -39,25 +39,33 @@ func NewMySQLEventRepositoryWithDB(db *sql.DB) repository_interface.EventReposit
 
 // Save はイベントを保存または更新します
 func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) error {
+	// editable_rolesをJSONに変換
+	editableRolesJSON, err := json.Marshal(event.EditableRoles)
+	if err != nil {
+		return fmt.Errorf("failed to marshal editable_roles: %w", err)
+	}
+
 	// イベント基本情報を保存
 	query := `
-		INSERT INTO events (event_id, title, description, status, venue, organizer_id, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO events (event_id, title, description, status, venue, organizer_id, editable_roles, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON DUPLICATE KEY UPDATE
 		title = VALUES(title),
 		description = VALUES(description),
 		status = VALUES(status),
 		venue = VALUES(venue),
+		editable_roles = VALUES(editable_roles),
 		updated_at = VALUES(updated_at)
 	`
 
-	_, err := r.db.ExecContext(ctx, query,
+	_, err = r.db.ExecContext(ctx, query,
 		event.EventID,
 		event.Title,
 		event.Description,
 		string(event.Status),
 		event.Venue,
 		event.Organizer.UserID,
+		editableRolesJSON,
 		event.CreatedAt,
 		event.UpdatedAt,
 	)
@@ -67,6 +75,11 @@ func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) err
 
 	// 許可された役割を保存
 	if err := r.saveAllowedRoles(ctx, event.EventID, event.AllowedRoles); err != nil {
+		return err
+	}
+
+	// 編集可能な役割を保存
+	if err := r.saveEditableRoles(ctx, event.EventID, event.EditableRoles); err != nil {
 		return err
 	}
 
@@ -93,7 +106,7 @@ func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) err
 // FindByID は指定されたIDのイベントを取得します
 func (r *MySQLEventRepository) FindByID(ctx context.Context, id string) (*model.Event, error) {
 	query := `
-		SELECT e.event_id, e.title, e.description, e.status, e.venue, e.created_at, e.updated_at,
+		SELECT e.event_id, e.title, e.description, e.status, e.venue, e.editable_roles, e.created_at, e.updated_at,
 		       u.user_id, u.name, u.generation
 		FROM events e
 		JOIN users u ON e.organizer_id = u.user_id
@@ -105,6 +118,7 @@ func (r *MySQLEventRepository) FindByID(ctx context.Context, id string) (*model.
 	var event model.Event
 	var organizer model.User
 	var statusStr string
+	var editableRolesJSON []byte
 
 	err := row.Scan(
 		&event.EventID,
@@ -112,6 +126,7 @@ func (r *MySQLEventRepository) FindByID(ctx context.Context, id string) (*model.
 		&event.Description,
 		&statusStr,
 		&event.Venue,
+		&editableRolesJSON,
 		&event.CreatedAt,
 		&event.UpdatedAt,
 		&organizer.UserID,
@@ -123,6 +138,11 @@ func (r *MySQLEventRepository) FindByID(ctx context.Context, id string) (*model.
 			return nil, ErrEventNotFound
 		}
 		return nil, err
+	}
+
+	// editable_rolesをJSONから復元
+	if err := json.Unmarshal(editableRolesJSON, &event.EditableRoles); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal editable_roles: %w", err)
 	}
 
 	event.Status = model.EventStatus(statusStr)
@@ -139,7 +159,7 @@ func (r *MySQLEventRepository) FindByID(ctx context.Context, id string) (*model.
 // FindAll は全てのイベントを取得します
 func (r *MySQLEventRepository) FindAll(ctx context.Context) ([]*model.Event, error) {
 	query := `
-		SELECT e.event_id, e.title, e.description, e.status, e.venue, e.created_at, e.updated_at,
+		SELECT e.event_id, e.title, e.description, e.status, e.venue, e.editable_roles, e.created_at, e.updated_at,
 		       u.user_id, u.name, u.generation
 		FROM events e
 		JOIN users u ON e.organizer_id = u.user_id
@@ -157,6 +177,7 @@ func (r *MySQLEventRepository) FindAll(ctx context.Context) ([]*model.Event, err
 		var event model.Event
 		var organizer model.User
 		var statusStr string
+		var editableRolesJSON []byte
 
 		err := rows.Scan(
 			&event.EventID,
@@ -164,6 +185,7 @@ func (r *MySQLEventRepository) FindAll(ctx context.Context) ([]*model.Event, err
 			&event.Description,
 			&statusStr,
 			&event.Venue,
+			&editableRolesJSON,
 			&event.CreatedAt,
 			&event.UpdatedAt,
 			&organizer.UserID,
@@ -172,6 +194,11 @@ func (r *MySQLEventRepository) FindAll(ctx context.Context) ([]*model.Event, err
 		)
 		if err != nil {
 			return nil, err
+		}
+
+		// editable_rolesをJSONから復元
+		if err := json.Unmarshal(editableRolesJSON, &event.EditableRoles); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal editable_roles: %w", err)
 		}
 
 		event.Status = model.EventStatus(statusStr)
@@ -323,6 +350,34 @@ func (r *MySQLEventRepository) saveSchedulePoll(ctx context.Context, eventID str
 	return err
 }
 
+func (r *MySQLEventRepository) saveEditableRoles(ctx context.Context, eventID string, roles []model.UserRole) error {
+	// 既存の編集可能な役割を削除
+	deleteQuery := `DELETE FROM event_editable_roles WHERE event_id = ?`
+	_, err := r.db.ExecContext(ctx, deleteQuery, eventID)
+	if err != nil {
+		return fmt.Errorf("failed to delete existing editable roles: %w", err)
+	}
+
+	// 新しい編集可能な役割を挿入
+	if len(roles) > 0 {
+		insertQuery := `INSERT INTO event_editable_roles (event_id, role_name) VALUES (?, ?)`
+		stmt, err := r.db.PrepareContext(ctx, insertQuery)
+		if err != nil {
+			return fmt.Errorf("failed to prepare editable roles insert statement: %w", err)
+		}
+		defer stmt.Close()
+
+		for _, role := range roles {
+			_, err := stmt.ExecContext(ctx, eventID, string(role))
+			if err != nil {
+				return fmt.Errorf("failed to insert editable role %s: %w", role, err)
+			}
+		}
+	}
+
+	return nil
+}
+
 func (r *MySQLEventRepository) loadEventRelations(ctx context.Context, event *model.Event) error {
 	// 主催者の役割を取得
 	if event.Organizer != nil {
@@ -354,6 +409,21 @@ func (r *MySQLEventRepository) loadEventRelations(ctx context.Context, event *mo
 			return err
 		}
 		event.AllowedRoles = append(event.AllowedRoles, model.UserRole(roleStr))
+	}
+
+	// 編集可能な役割を取得
+	rows, err = r.db.QueryContext(ctx, "SELECT role_name FROM event_editable_roles WHERE event_id = ?", event.EventID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var roleStr string
+		if err := rows.Scan(&roleStr); err != nil {
+			return err
+		}
+		event.EditableRoles = append(event.EditableRoles, model.UserRole(roleStr))
 	}
 
 	// タグを取得

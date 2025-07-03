@@ -30,11 +30,23 @@ type CreateEventRequest struct {
 	Description    string             `json:"description"`
 	Venue          string             `json:"venue"`
 	AllowedRoles   []model.UserRole   `json:"allowed_roles"`
+	EditableRoles  []model.UserRole   `json:"editable_roles"`
 	AllowedUsers   []string           `json:"allowed_users"`
 	Tags           []string           `json:"tags"`
 	FeeSettings    []model.FeeSetting `json:"fee_settings"`
 	PollType       string             `json:"poll_type"`
 	PollCandidates []string           `json:"poll_candidates"` // ISO 8601形式の日時文字列
+}
+
+// UpdateEventRequest はイベント更新リクエスト
+type UpdateEventRequest struct {
+	Title         string             `json:"title" binding:"required"`
+	Description   string             `json:"description"`
+	Venue         string             `json:"venue"`
+	AllowedRoles  []model.UserRole   `json:"allowed_roles"`
+	EditableRoles []model.UserRole   `json:"editable_roles"`
+	Tags          []string           `json:"tags"`
+	FeeSettings   []model.FeeSetting `json:"fee_settings"`
 }
 
 // CreateEvent はイベント作成エンドポイント
@@ -75,6 +87,7 @@ func (h *EventHandler) CreateEvent(c *gin.Context) {
 		Description:    req.Description,
 		Venue:          req.Venue,
 		AllowedRoles:   req.AllowedRoles,
+		EditableRoles:  req.EditableRoles,
 		AllowedUsers:   req.AllowedUsers,
 		Tags:           tags,
 		FeeSettings:    req.FeeSettings,
@@ -89,6 +102,100 @@ func (h *EventHandler) CreateEvent(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"event_id": eventID})
+}
+
+// UpdateEvent はイベント更新エンドポイント
+func (h *EventHandler) UpdateEvent(c *gin.Context) {
+	eventID := c.Param("id")
+	if eventID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "event_id is required"})
+		return
+	}
+
+	var req UpdateEventRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 認証情報からユーザーIDを取得
+	userID := c.GetString("user_id")
+	if userID == "" {
+		userID = "dummy-user-001"
+	}
+
+	// 編集権限チェック（簡易版）
+	// TODO: 実際の実装では、ユーザーの役割とイベントのeditable_rolesを比較する
+	_, err := h.eventQueryUsecase.GetEventDetails(c.Request.Context(), eventID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+		return
+	}
+
+	// タグをmodel.Tagに変換
+	tags := make([]model.Tag, len(req.Tags))
+	for i, tag := range req.Tags {
+		tags[i] = model.Tag(tag)
+	}
+
+	cmd := &command.UpdateEventCommand{
+		EventID:       eventID,
+		Title:         req.Title,
+		Description:   req.Description,
+		Venue:         req.Venue,
+		AllowedRoles:  req.AllowedRoles,
+		EditableRoles: req.EditableRoles,
+		Tags:          tags,
+		FeeSettings:   req.FeeSettings,
+	}
+
+	if err := h.eventCommandUsecase.UpdateEvent(c.Request.Context(), cmd); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 更新後のイベント詳細を返す
+	updatedEvent, err := h.eventQueryUsecase.GetEventDetails(c.Request.Context(), eventID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, updatedEvent)
+}
+
+// DeleteEvent はイベント削除エンドポイント
+func (h *EventHandler) DeleteEvent(c *gin.Context) {
+	eventID := c.Param("id")
+	if eventID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "event_id is required"})
+		return
+	}
+
+	// 認証情報からユーザーIDを取得
+	userID := c.GetString("user_id")
+	if userID == "" {
+		userID = "dummy-user-001"
+	}
+
+	// 削除権限チェック（簡易版）
+	// TODO: 実際の実装では、ユーザーの役割とイベントのeditable_rolesを比較する
+	_, err := h.eventQueryUsecase.GetEventDetails(c.Request.Context(), eventID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+		return
+	}
+
+	cmd := &command.DeleteEventCommand{
+		EventID: eventID,
+	}
+
+	if err := h.eventCommandUsecase.DeleteEvent(c.Request.Context(), cmd); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
 // ListEventsRequest はイベント一覧取得リクエスト
@@ -165,5 +272,7 @@ func (h *EventHandler) RegisterRoutes(r *gin.Engine) {
 		events.POST("", h.CreateEvent)
 		events.GET("", h.ListEvents)
 		events.GET("/:id", h.GetEventDetails)
+		events.PUT("/:id", h.UpdateEvent)
+		events.DELETE("/:id", h.DeleteEvent)
 	}
 }

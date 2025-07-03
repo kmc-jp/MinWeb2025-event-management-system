@@ -10,14 +10,7 @@
 
 package generated
 
-import (
-	"time"
-)
-
-type EventDetails struct {
-
-	// イベントID
-	EventId string `json:"event_id"`
+type UpdateEventRequest struct {
 
 	// イベントタイトル
 	Title string `json:"title"`
@@ -25,30 +18,18 @@ type EventDetails struct {
 	// イベントの説明
 	Description string `json:"description,omitempty"`
 
-	// イベントステータス
-	Status string `json:"status"`
-
 	// 会場
 	Venue string `json:"venue,omitempty"`
 
 	// 参加可能な役割
-	AllowedRoles []string `json:"allowed_roles,omitempty"`
+	AllowedRoles []string `json:"allowed_roles"`
 
 	// 編集可能な役割
-	EditableRoles []string `json:"editable_roles,omitempty"`
+	EditableRoles []string `json:"editable_roles"`
 
 	// タグ
 	Tags []string `json:"tags,omitempty"`
 
 	// 料金設定
 	FeeSettings []FeeSetting `json:"fee_settings,omitempty"`
-
-	// 主催者名
-	OrganizerName string `json:"organizer_name"`
-
-	// 作成日時
-	CreatedAt time.Time `json:"created_at"`
-
-	// 更新日時
-	UpdatedAt time.Time `json:"updated_at"`
 }

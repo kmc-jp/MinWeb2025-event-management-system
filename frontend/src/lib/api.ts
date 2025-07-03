@@ -1,4 +1,4 @@
-import { DefaultApi, Configuration, PaginatedEventList, EventSummaryStatusEnum, UserRole } from '../generated';
+import { DefaultApi, Configuration, PaginatedEventList, EventSummaryStatusEnum, UpdateEventRequest } from '../generated';
 
 // 開発環境かどうかをチェック
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -268,6 +268,7 @@ class MockApiClient {
       description: 'This is a mock event for development',
       venue: 'Mock Venue',
       allowed_roles: ['Member'],
+      editable_roles: ['admin'],
       tags: ['mock', 'development'],
       fee_settings: [],
       poll_type: 'date_select',
@@ -281,6 +282,40 @@ class MockApiClient {
     return {
       data: mockEvent
     };
+  }
+
+  // イベントを更新（Mock）
+  async updateEvent(id: string, updateEventRequest: UpdateEventRequest) {
+    if (!this.mockUser) {
+      throw new Error('ユーザーが認証されていません');
+    }
+
+    return {
+      data: {
+        event_id: id,
+        title: updateEventRequest.title,
+        description: updateEventRequest.description,
+        venue: updateEventRequest.venue,
+        allowed_roles: updateEventRequest.allowed_roles,
+        editable_roles: updateEventRequest.editable_roles,
+        tags: updateEventRequest.tags,
+        fee_settings: updateEventRequest.fee_settings,
+        status: 'DRAFT' as EventSummaryStatusEnum,
+        organizer_name: 'Mock Organizer',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+    };
+  }
+
+  // イベントを削除（Mock）
+  async deleteEvent(id: string) {
+    if (!this.mockUser) {
+      throw new Error('ユーザーが認証されていません');
+    }
+
+    // Mock実装では何もしない
+    return { data: undefined };
   }
 
   // イベント一覧を取得（Mock）

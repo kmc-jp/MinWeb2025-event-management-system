@@ -36,6 +36,11 @@ func CreateTag(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
+// DeleteEvent - イベントを削除
+func DeleteEvent(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{})
+}
+
 // DeleteRole - 役割を削除
 func DeleteRole(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
@@ -88,6 +93,11 @@ func ListUsers(c *gin.Context) {
 
 // RemoveRoleFromUser - ユーザーから役割を削除
 func RemoveRoleFromUser(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{})
+}
+
+// UpdateEvent - イベントを更新
+func UpdateEvent(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserRole } from '../../../generated/api';
+
 import { useAuth } from '../../../lib/auth';
 
 // Mockユーザーの型定義
@@ -74,7 +74,7 @@ export default function LoginPage() {
       login({
         user_id: mockUser.id,
         name: mockUser.name,
-        roles: mockUser.roles as UserRole[],
+        roles: mockUser.roles as string[],
         generation: mockUser.generation,
       });
 
