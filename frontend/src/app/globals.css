@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  html {
+    font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  }
+  
+  body {
+    @apply bg-kmc-gray-50 text-kmc-gray-900;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-kmc-500 hover:bg-kmc-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-white hover:bg-kmc-gray-50 text-kmc-gray-700 border border-kmc-gray-300 px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-kmc-gray-200 hover:shadow-md transition-shadow duration-200;
+  }
+  
+  .input-field {
+    @apply border border-kmc-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-kmc-500 focus:border-transparent;
+  }
+} 

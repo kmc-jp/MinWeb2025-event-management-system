@@ -42,12 +42,12 @@ export default function EventsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'DRAFT': return 'bg-gray-100 text-gray-800';
-      case 'SCHEDULE_POLLING': return 'bg-blue-100 text-blue-800';
+      case 'DRAFT': return 'bg-kmc-gray-100 text-kmc-gray-800';
+      case 'SCHEDULE_POLLING': return 'bg-kmc-100 text-kmc-700';
       case 'CONFIRMED': return 'bg-green-100 text-green-800';
       case 'FINISHED': return 'bg-purple-100 text-purple-800';
       case 'CANCELLED': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      default: return 'bg-kmc-gray-100 text-kmc-gray-800';
     }
   };
 
@@ -66,11 +66,11 @@ export default function EventsPage() {
 
   if (loading && events.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-kmc-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">読み込み中...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-kmc-500 mx-auto"></div>
+            <p className="mt-4 text-kmc-gray-600">読み込み中...</p>
           </div>
         </div>
       </div>
@@ -78,43 +78,50 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* ヘッダー */}
-        <div className="mb-8">
+    <div className="min-h-screen bg-kmc-gray-50">
+      {/* ヘッダー */}
+      <header className="bg-white shadow-sm border-b border-kmc-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-gray-900">イベント一覧</h1>
+            <div>
+              <h1 className="text-3xl font-bold text-kmc-gray-900">イベント一覧</h1>
+              <p className="mt-1 text-kmc-gray-600">作成されたイベントの一覧を表示します</p>
+            </div>
             <Link
               href="/events/new"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+              className="btn-primary"
             >
               新規作成
             </Link>
           </div>
         </div>
+      </header>
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* フィルター */}
-        <div className="mb-6">
-          <div className="flex gap-4 items-center">
-            <label className="text-sm font-medium text-gray-700">ステータス:</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">すべて</option>
-              <option value="DRAFT">下書き</option>
-              <option value="SCHEDULE_POLLING">日程調整中</option>
-              <option value="CONFIRMED">確定</option>
-              <option value="FINISHED">終了</option>
-              <option value="CANCELLED">キャンセル</option>
-            </select>
+        <div className="mb-8">
+          <div className="bg-white rounded-lg shadow-sm border border-kmc-gray-200 p-6">
+            <div className="flex gap-4 items-center">
+              <label className="text-sm font-medium text-kmc-gray-700">ステータス:</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="input-field"
+              >
+                <option value="">すべて</option>
+                <option value="DRAFT">下書き</option>
+                <option value="SCHEDULE_POLLING">日程調整中</option>
+                <option value="CONFIRMED">確定</option>
+                <option value="FINISHED">終了</option>
+                <option value="CANCELLED">キャンセル</option>
+              </select>
+            </div>
           </div>
         </div>
 
         {/* エラーメッセージ */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
             <p className="text-red-800">{error}</p>
           </div>
         )}
@@ -122,47 +129,50 @@ export default function EventsPage() {
         {/* イベント一覧 */}
         {events.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">イベントが見つかりません</p>
+            <div className="bg-white rounded-lg shadow-sm border border-kmc-gray-200 p-8">
+              <p className="text-kmc-gray-500 text-lg">イベントが見つかりません</p>
+              <p className="text-kmc-gray-400 text-sm mt-2">新しいイベントを作成してみてください</p>
+            </div>
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {events.map((event) => (
               <div
                 key={event.event_id}
-                className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow"
+                className="card p-6"
               >
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
-                      {event.title}
-                    </h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
-                      {getStatusText(event.status)}
-                    </span>
-                  </div>
-                  
-                  {event.venue && (
-                    <p className="text-gray-600 text-sm mb-2">
-                      📍 {event.venue}
-                    </p>
-                  )}
-                  
-                  <p className="text-gray-500 text-sm mb-4">
-                    主催: {event.organizer_name}
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-lg font-semibold text-kmc-gray-900 line-clamp-2 flex-1 mr-3">
+                    {event.title}
+                  </h3>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
+                    {getStatusText(event.status)}
+                  </span>
+                </div>
+                
+                {event.venue && (
+                  <p className="text-kmc-gray-600 text-sm mb-2 flex items-center">
+                    <span className="mr-1">📍</span>
+                    {event.venue}
                   </p>
-                  
-                  <p className="text-gray-400 text-xs">
-                    作成日: {new Date(event.created_at).toLocaleDateString('ja-JP')}
-                  </p>
-                  
-                  <div className="mt-4">
-                    <Link
-                      href={`/events/${event.event_id}`}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                    >
-                      詳細を見る →
-                    </Link>
-                  </div>
+                )}
+                
+                <p className="text-kmc-gray-500 text-sm mb-4">
+                  主催: {event.organizer_name}
+                </p>
+                
+                <p className="text-kmc-gray-400 text-xs mb-4">
+                  作成日: {new Date(event.created_at).toLocaleDateString('ja-JP')}
+                </p>
+                
+                <div className="pt-4 border-t border-kmc-gray-100">
+                  <Link
+                    href={`/events/${event.event_id}`}
+                    className="text-kmc-500 hover:text-kmc-600 text-sm font-medium flex items-center"
+                  >
+                    詳細を見る
+                    <span className="ml-1">→</span>
+                  </Link>
                 </div>
               </div>
             ))}
@@ -176,19 +186,19 @@ export default function EventsPage() {
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 前へ
               </button>
               
-              <span className="px-3 py-2 text-sm text-gray-700">
+              <span className="px-3 py-2 text-sm text-kmc-gray-700 bg-white border border-kmc-gray-300 rounded-md">
                 {currentPage} / {totalPages}
               </span>
               
               <button
                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 次へ
               </button>
