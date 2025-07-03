@@ -1,6 +1,8 @@
 package http
 
 import (
+	"context"
+	"errors"
 	"event-management-system/backend/internal/domain/model"
 	"event-management-system/backend/internal/usecase/command"
 	"event-management-system/backend/internal/usecase/query"
@@ -14,13 +16,15 @@ import (
 type EventHandler struct {
 	eventCommandUsecase *command.EventCommandUsecase
 	eventQueryUsecase   *query.EventQueryUsecase
+	userQueryUsecase    *query.UserQueryUsecase
 }
 
 // NewEventHandler は新しいイベントハンドラを作成
-func NewEventHandler(ecu *command.EventCommandUsecase, equ *query.EventQueryUsecase) *EventHandler {
+func NewEventHandler(ecu *command.EventCommandUsecase, equ *query.EventQueryUsecase, uqu *query.UserQueryUsecase) *EventHandler {
 	return &EventHandler{
 		eventCommandUsecase: ecu,
 		eventQueryUsecase:   equ,
+		userQueryUsecase:    uqu,
 	}
 }
 
@@ -56,6 +60,26 @@ type JoinEventRequest struct {
 	UserID string `json:"user_id" binding:"required"`
 }
 
+// hasEditPermission はユーザーがイベントを編集する権限があるかチェックします
+func (h *EventHandler) hasEditPermission(ctx context.Context, userID string, editableRoles []model.UserRole) error {
+	// ユーザー情報を取得
+	user, err := h.userQueryUsecase.GetUser(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	// イベントの編集可能な役割とユーザーの役割を比較
+	for _, userRole := range user.Roles {
+		for _, editableRole := range editableRoles {
+			if userRole == editableRole {
+				return nil // 権限あり
+			}
+		}
+	}
+
+	return errors.New("insufficient permissions to edit this event")
+}
+
 // CreateEvent はイベント作成エンドポイント
 func (h *EventHandler) CreateEvent(c *gin.Context) {
 	var req CreateEventRequest
@@ -69,6 +93,26 @@ func (h *EventHandler) CreateEvent(c *gin.Context) {
 	if organizerID == "" {
 		// 開発用：認証が実装されていない場合はダミーユーザーIDを使用
 		organizerID = "dummy-user-001"
+	}
+
+	// イベント作成権限チェック（admin役割を持つユーザーのみ作成可能）
+	user, err := h.userQueryUsecase.GetUser(c.Request.Context(), organizerID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	hasAdminRole := false
+	for _, role := range user.Roles {
+		if role == model.UserRoleAdmin {
+			hasAdminRole = true
+			break
+		}
+	}
+
+	if !hasAdminRole {
+		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions to create events"})
+		return
 	}
 
 	// 日時文字列をtime.Timeに変換
@@ -154,11 +198,16 @@ func (h *EventHandler) UpdateEvent(c *gin.Context) {
 		userID = "dummy-user-001"
 	}
 
-	// 編集権限チェック（簡易版）
-	// TODO: 実際の実装では、ユーザーの役割とイベントのeditable_rolesを比較する
-	_, err := h.eventQueryUsecase.GetEventDetails(c.Request.Context(), eventID)
+	// イベント詳細を取得
+	event, err := h.eventQueryUsecase.GetEventDetails(c.Request.Context(), eventID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+		return
+	}
+
+	// 編集権限チェック
+	if err := h.hasEditPermission(c.Request.Context(), userID, event.EditableRoles); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -208,11 +257,16 @@ func (h *EventHandler) DeleteEvent(c *gin.Context) {
 		userID = "dummy-user-001"
 	}
 
-	// 削除権限チェック（簡易版）
-	// TODO: 実際の実装では、ユーザーの役割とイベントのeditable_rolesを比較する
-	_, err := h.eventQueryUsecase.GetEventDetails(c.Request.Context(), eventID)
+	// イベント詳細を取得
+	event, err := h.eventQueryUsecase.GetEventDetails(c.Request.Context(), eventID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+		return
+	}
+
+	// 削除権限チェック
+	if err := h.hasEditPermission(c.Request.Context(), userID, event.EditableRoles); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 

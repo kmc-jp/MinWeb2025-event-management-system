@@ -1,7 +1,13 @@
-import { DefaultApi, Configuration, PaginatedEventList, EventSummaryStatusEnum, UpdateEventRequest } from '../generated';
+import { DefaultApi, Configuration, PaginatedEventList, EventSummaryStatusEnum, UpdateEventRequest, CreateEventRequest } from '../generated';
+import { isDevelopment } from './constants';
 
-// 開発環境かどうかをチェック
-const isDevelopment = process.env.NODE_ENV === 'development';
+// Mockユーザーの型定義
+interface MockUser {
+  user_id: string;
+  name: string;
+  roles: string[];
+  generation: number;
+}
 
 // APIクライアントの設定
 const configuration = new Configuration({
@@ -15,7 +21,7 @@ export const apiClient = new DefaultApi(configuration);
 
 // Mockユーザー用のAPIクライアント
 class MockApiClient {
-  private mockUser: any = null;
+  private mockUser: MockUser | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -155,7 +161,7 @@ class MockApiClient {
       data: {
         user_id: this.mockUser.user_id,
         name: this.mockUser.name,
-        roles: [...this.mockUser.roles, roleName as any],
+        roles: [...this.mockUser.roles, roleName],
         generation: this.mockUser.generation,
       }
     };
@@ -235,13 +241,13 @@ class MockApiClient {
   }
 
   // イベント作成（Mock）
-  async createEvent(createEventRequest: any) {
+  async createEvent(createEventRequest: CreateEventRequest) {
     if (!this.mockUser) {
       throw new Error('ユーザーが認証されていません');
     }
 
     // 運営のみがイベントを作成可能
-    if (this.mockUser.role !== 'CircleAdmin') {
+    if (!this.mockUser.roles.includes('admin')) {
       throw new Error('イベントの作成権限がありません');
     }
 
@@ -465,12 +471,15 @@ export const getApiClient = () => {
 };
 
 // エラーハンドリング用のヘルパー関数
-export const handleApiError = (error: any): string => {
-  if (error.response?.data?.error) {
-    return error.response.data.error;
-  }
-  if (error.message) {
-    return error.message;
+export const handleApiError = (error: unknown): string => {
+  if (typeof error === 'object' && error !== null) {
+    const errorObj = error as { response?: { data?: { error?: string } }; message?: string };
+    if (errorObj.response?.data?.error) {
+      return errorObj.response.data.error;
+    }
+    if (errorObj.message) {
+      return errorObj.message;
+    }
   }
   return '予期しないエラーが発生しました';
 }; 

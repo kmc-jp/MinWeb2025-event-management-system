@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '../generated/api';
+import { isDevelopment } from './constants';
 
 // 認証コンテキストの型定義
 interface AuthContextType {
@@ -36,9 +37,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 開発環境かどうかをチェック
-  const isDevelopment = process.env.NODE_ENV === 'development';
-
   useEffect(() => {
     // 初期化時にユーザー情報を取得
     const initializeAuth = () => {
@@ -62,7 +60,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         // 本番環境ではOpenID Connectを使用
         // ここにOpenID Connectのトークン検証処理を追加
-        console.log('本番環境ではOpenID Connectを使用します');
       }
       setLoading(false);
     };
@@ -116,7 +113,6 @@ export function useAuth() {
 // 認証が必要なページを保護するためのコンポーネント
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
-  const isDevelopment = process.env.NODE_ENV === 'development';
 
   if (loading) {
     return (

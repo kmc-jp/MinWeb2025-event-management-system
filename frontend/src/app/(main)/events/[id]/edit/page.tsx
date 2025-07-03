@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getApiClient, handleApiError } from '../../../../../lib/api';
 import { UpdateEventRequest, FeeSetting, Money } from '../../../../../generated/api';
+import { ROLE_LABELS } from '../../../../../lib/constants';
 
 export default function EditEventPage() {
   const router = useRouter();
@@ -60,10 +61,6 @@ export default function EditEventPage() {
   };
 
   const userRoles: string[] = ['member', 'admin'];
-  const userRoleLabels: { [key: string]: string } = {
-    'member': '部員',
-    'admin': '管理者',
-  };
 
   const handleInputChange = (field: keyof UpdateEventRequest, value: any) => {
     setFormData(prev => ({
@@ -249,7 +246,7 @@ export default function EditEventPage() {
                             : 'bg-white text-kmc-700 border-kmc-300 hover:bg-kmc-50'
                         }`}
                       >
-                        {userRoleLabels[role]}
+                        {ROLE_LABELS[role]}
                       </button>
                     ))}
                   </div>
@@ -266,7 +263,7 @@ export default function EditEventPage() {
                           key={role}
                           className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-kmc-100 text-kmc-800"
                         >
-                          {userRoleLabels[role]}
+                          {ROLE_LABELS[role]}
                           <button
                             type="button"
                             onClick={() => {
@@ -314,7 +311,7 @@ export default function EditEventPage() {
                             : 'bg-white text-kmc-700 border-kmc-300 hover:bg-kmc-50'
                         }`}
                       >
-                        {userRoleLabels[role]}
+                        {ROLE_LABELS[role]}
                       </button>
                     ))}
                   </div>
@@ -331,7 +328,7 @@ export default function EditEventPage() {
                           key={role}
                           className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-kmc-100 text-kmc-800"
                         >
-                          {userRoleLabels[role]}
+                          {ROLE_LABELS[role]}
                           <button
                             type="button"
                             onClick={() => {

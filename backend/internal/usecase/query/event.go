@@ -13,6 +13,7 @@ type EventSummaryDTO struct {
 	Status           model.EventStatus `json:"status"`
 	Venue            string            `json:"venue"`
 	Organizer        string            `json:"organizer_name"`
+	AllowedRoles     []model.UserRole  `json:"allowed_roles"`
 	ConfirmedDate    *string           `json:"confirmed_date,omitempty"`
 	ScheduleDeadline *string           `json:"schedule_deadline,omitempty"`
 	CreatedAt        string            `json:"created_at"`
@@ -26,6 +27,7 @@ type EventDetailsDTO struct {
 	Status           model.EventStatus  `json:"status"`
 	Venue            string             `json:"venue"`
 	AllowedRoles     []model.UserRole   `json:"allowed_roles"`
+	EditableRoles    []model.UserRole   `json:"editable_roles"`
 	Tags             []model.Tag        `json:"tags"`
 	FeeSettings      []model.FeeSetting `json:"fee_settings"`
 	ConfirmedDate    *string            `json:"confirmed_date,omitempty"`
@@ -113,6 +115,7 @@ func (uc *EventQueryUsecase) ListEvents(ctx context.Context, query *ListEventsQu
 			Status:           event.Status,
 			Venue:            event.Venue,
 			Organizer:        event.Organizer.Name,
+			AllowedRoles:     event.AllowedRoles,
 			ConfirmedDate:    confirmedDate,
 			ScheduleDeadline: scheduleDeadline,
 			CreatedAt:        event.CreatedAt.Format("2006-01-02T15:04:05Z"),
@@ -174,6 +177,7 @@ func (uc *EventQueryUsecase) GetEventDetails(ctx context.Context, eventID string
 		Status:           event.Status,
 		Venue:            event.Venue,
 		AllowedRoles:     event.AllowedRoles,
+		EditableRoles:    event.EditableRoles,
 		Tags:             event.Tags,
 		FeeSettings:      event.FeeSettings,
 		ConfirmedDate:    confirmedDate,

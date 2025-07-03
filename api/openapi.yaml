@@ -819,6 +819,11 @@ components:
         organizer_name:
           type: string
           description: 主催者名
+        allowed_roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserRole"
+          description: 参加可能な役割
         confirmed_date:
           type: string
           format: date-time

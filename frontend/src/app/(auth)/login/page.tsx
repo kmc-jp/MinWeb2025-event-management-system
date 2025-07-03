@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-
 import { useAuth } from '../../../lib/auth';
+import { ROLE_LABELS, isDevelopment } from '../../../lib/constants';
 
 // Mockユーザーの型定義
 interface MockUser {
@@ -21,11 +21,6 @@ const MOCK_USERS: MockUser[] = [
   { id: 'member2', name: 'Member User 2', roles: ['member'], generation: '2024', password: 'password' },
 ];
 
-const roleLabels: Record<string, string> = {
-  member: '部員',
-  admin: '管理者',
-};
-
 export default function LoginPage() {
   const router = useRouter();
   const { login, user, loading } = useAuth();
@@ -35,14 +30,11 @@ export default function LoginPage() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // 開発環境かどうかをチェック
-  const isDevelopment = process.env.NODE_ENV === 'development';
-
   useEffect(() => {
     // 本番環境の場合はリダイレクト
     if (!isDevelopment) {
       // 本番環境ではOpenID Connectを使用
       // ここにOpenID Connectのリダイレクト処理を追加
-      console.log('本番環境ではOpenID Connectを使用します');
       return;
     }
 
@@ -150,7 +142,7 @@ export default function LoginPage() {
                 <option value="">ユーザーを選択してください</option>
                 {MOCK_USERS.map((user) => (
                   <option key={user.id} value={user.id}>
-                    {user.name} ({user.roles.map((role) => roleLabels[role]).join(', ')})
+                    {user.name} ({user.roles.map((role) => ROLE_LABELS[role]).join(', ')})
                   </option>
                 ))}
               </select>

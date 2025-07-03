@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getApiClient, handleApiError } from '../../../lib/api';
-import { EventSummary, EventSummaryStatusEnum } from '../../../generated';
+import { EventSummary, EventSummaryStatusEnum, User } from '../../../generated';
 import Calendar from './components/Calendar';
 import EventList from './components/EventList';
 import TagFilter from './components/TagFilter';
@@ -20,7 +20,7 @@ export default function EventsPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [participationFilter, setParticipationFilter] = useState<ParticipationFilterType>('all');
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const pageSize = 50; // カレンダー表示のためにより多くのイベントを取得
 
   useEffect(() => {
@@ -50,12 +50,12 @@ export default function EventsPage() {
       const response = await apiClient.listEvents(currentPage, pageSize, undefined, tagsParam);
       let eventData = response.data.data.map((event: any) => ({
         ...event,
-        schedule_deadline: event.schedule_deadline || undefined,
-      }));
+        schedule_deadline: event.schedule_deadline ?? undefined,
+      })) as EventSummary[];
 
       // 参加状況フィルターをフロントエンドで適用
       if (participationFilter !== 'all' && currentUser) {
-        eventData = eventData.filter((event: any) => {
+        eventData = eventData.filter((event: EventSummary) => {
           if (participationFilter === 'joinable') {
             // 参加可能な役割を持っているかチェック（参加済みも含む）
             const userRoles = currentUser.roles || [];

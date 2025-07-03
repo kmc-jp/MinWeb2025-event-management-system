@@ -67,7 +67,7 @@ func main() {
 	tagQueryUsecase := query.NewTagQueryUsecase(tagRepo)
 
 	// HTTPハンドラの初期化
-	eventHandler := http.NewEventHandler(eventCommandUsecase, eventQueryUsecase)
+	eventHandler := http.NewEventHandler(eventCommandUsecase, eventQueryUsecase, userQueryUsecase)
 	userHandler := http.NewUserHandler(userQueryUsecase)
 	roleHandler := http.NewRoleHandler(roleCommandUsecase, roleQueryUsecase, userQueryUsecase)
 	tagHandler := http.NewTagHandler(tagCommandUsecase, tagQueryUsecase)

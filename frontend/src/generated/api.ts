@@ -339,6 +339,12 @@ export interface EventSummary {
      */
     'organizer_name': string;
     /**
+     * 参加可能な役割
+     * @type {Array<string>}
+     * @memberof EventSummary
+     */
+    'allowed_roles'?: Array<string>;
+    /**
      * 確定した日程
      * @type {string}
      * @memberof EventSummary

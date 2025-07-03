@@ -2,16 +2,9 @@
 
 import { useAuth } from '../../lib/auth';
 import Link from 'next/link';
-import { User } from '../../generated/api';
 
 export default function MainLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
-  const isDevelopment = process.env.NODE_ENV === 'development';
-
-  const roleLabels: Record<string, string> = {
-    member: '部員',
-    admin: '管理者',
-  };
 
   const handleLogout = () => {
     logout();
@@ -43,21 +36,7 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
             {user && (
               <div className="flex items-center space-x-4">
                 <div className="text-sm text-kmc-gray-600">
-                  <span className="font-medium">{user.name}</span>
-                  <span className="mx-2">•</span>
-                  <span>{user?.roles?.[0] ? roleLabels[user.roles[0]] : ''}</span>
-                  {user.generation && (
-                    <>
-                      <span className="mx-2">•</span>
-                      <span>{user.generation}期</span>
-                    </>
-                  )}
-                  {isDevelopment && (
-                    <>
-                      <span className="mx-2">•</span>
-                      <span className="text-orange-600 font-medium">開発環境</span>
-                    </>
-                  )}
+                  <span className="font-medium">ID: {user.user_id}</span>
                 </div>
                 <button
                   onClick={handleLogout}
