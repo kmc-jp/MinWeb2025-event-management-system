@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"event-management-system/backend/internal/domain/model"
-	"event-management-system/backend/internal/domain/repository"
+	"event-management-system/backend/internal/domain/repository_interface"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -18,7 +18,7 @@ type MySQLEventRepository struct {
 }
 
 // NewMySQLEventRepository は新しいMySQLイベントリポジトリを作成します
-func NewMySQLEventRepository(dsn string) (repository.EventRepository, error) {
+func NewMySQLEventRepository(dsn string) (repository_interface.EventRepository, error) {
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
