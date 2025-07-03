@@ -1,0 +1,551 @@
+openapi: 3.0.3
+info:
+  contact:
+    email: dev@example.com
+    name: 開発チーム
+  description: イベント管理システムのRESTful API - DDD/CQRSアーキテクチャに基づく実装
+  title: イベント管理システム API
+  version: 1.0.0
+servers:
+- description: 開発環境
+  url: http://localhost:8080
+paths:
+  /health:
+    get:
+      operationId: healthCheck
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+          description: サービス正常
+      summary: ヘルスチェック
+  /api/events:
+    get:
+      operationId: listEvents
+      parameters:
+      - description: ページ番号
+        explode: true
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+        style: form
+      - description: 1ページあたりの件数
+        explode: true
+        in: query
+        name: page_size
+        required: false
+        schema:
+          default: 20
+          maximum: 100
+          minimum: 1
+          type: integer
+        style: form
+      - description: イベントステータスでフィルタ
+        explode: true
+        in: query
+        name: status
+        required: false
+        schema:
+          enum:
+          - DRAFT
+          - SCHEDULE_POLLING
+          - CONFIRMED
+          - FINISHED
+          - CANCELLED
+          type: string
+        style: form
+      - description: タグでフィルタ（カンマ区切り）
+        explode: true
+        in: query
+        name: tags
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEventList'
+          description: 成功
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: バリデーションエラー
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: サーバーエラー
+      summary: イベント一覧を取得
+    post:
+      operationId: createEvent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateEventResponse'
+          description: イベント作成成功
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: バリデーションエラー
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: 認証エラー
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: サーバーエラー
+      summary: 新しいイベントを作成
+  /api/events/{id}:
+    get:
+      operationId: getEventDetails
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetails'
+          description: 成功
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: イベントが見つかりません
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: サーバーエラー
+      summary: イベント詳細を取得
+  /api/users/me:
+    get:
+      operationId: getCurrentUser
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: 成功
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: 認証エラー
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ユーザーが見つかりません
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: サーバーエラー
+      summary: 現在のユーザー情報を取得
+  /api/users/{id}:
+    get:
+      operationId: getUser
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: 成功
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ユーザーが見つかりません
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: サーバーエラー
+      summary: ユーザー情報を取得
+components:
+  schemas:
+    EventSummary:
+      example:
+        venue: venue
+        event_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        created_at: 2000-01-23T04:56:07.000+00:00
+        organizer_name: organizer_name
+        title: title
+        status: DRAFT
+      properties:
+        event_id:
+          description: イベントID
+          format: uuid
+          type: string
+        title:
+          description: イベントタイトル
+          type: string
+        status:
+          description: イベントステータス
+          enum:
+          - DRAFT
+          - SCHEDULE_POLLING
+          - CONFIRMED
+          - FINISHED
+          - CANCELLED
+          type: string
+        venue:
+          description: 会場
+          type: string
+        organizer_name:
+          description: 主催者名
+          type: string
+        created_at:
+          description: 作成日時
+          format: date-time
+          type: string
+      required:
+      - created_at
+      - event_id
+      - organizer_name
+      - status
+      - title
+      type: object
+    EventDetails:
+      example:
+        venue: venue
+        allowed_roles:
+        - null
+        - null
+        event_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        updated_at: 2000-01-23T04:56:07.000+00:00
+        description: description
+        created_at: 2000-01-23T04:56:07.000+00:00
+        organizer_name: organizer_name
+        title: title
+        status: DRAFT
+        tags:
+        - tags
+        - tags
+        fee_settings:
+        - applicable_generation: applicable_generation
+          applicable_role: null
+          fee:
+            amount: 0
+            currency: JPY
+        - applicable_generation: applicable_generation
+          applicable_role: null
+          fee:
+            amount: 0
+            currency: JPY
+      properties:
+        event_id:
+          description: イベントID
+          format: uuid
+          type: string
+        title:
+          description: イベントタイトル
+          type: string
+        description:
+          description: イベントの説明
+          type: string
+        status:
+          description: イベントステータス
+          enum:
+          - DRAFT
+          - SCHEDULE_POLLING
+          - CONFIRMED
+          - FINISHED
+          - CANCELLED
+          type: string
+        venue:
+          description: 会場
+          type: string
+        allowed_roles:
+          description: 参加可能な役割
+          items:
+            $ref: '#/components/schemas/UserRole'
+          type: array
+        tags:
+          description: タグ
+          items:
+            type: string
+          type: array
+        fee_settings:
+          description: 料金設定
+          items:
+            $ref: '#/components/schemas/FeeSetting'
+          type: array
+        organizer_name:
+          description: 主催者名
+          type: string
+        created_at:
+          description: 作成日時
+          format: date-time
+          type: string
+        updated_at:
+          description: 更新日時
+          format: date-time
+          type: string
+      required:
+      - created_at
+      - event_id
+      - organizer_name
+      - status
+      - title
+      - updated_at
+      type: object
+    PaginatedEventList:
+      example:
+        data:
+        - venue: venue
+          event_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          created_at: 2000-01-23T04:56:07.000+00:00
+          organizer_name: organizer_name
+          title: title
+          status: DRAFT
+        - venue: venue
+          event_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          created_at: 2000-01-23T04:56:07.000+00:00
+          organizer_name: organizer_name
+          title: title
+          status: DRAFT
+        total_count: 0
+        page: 6
+        page_size: 1
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/EventSummary'
+          type: array
+        total_count:
+          description: 総件数
+          type: integer
+        page:
+          description: 現在のページ番号
+          type: integer
+        page_size:
+          description: 1ページあたりの件数
+          type: integer
+      required:
+      - data
+      - page
+      - page_size
+      - total_count
+      type: object
+    CreateEventRequest:
+      example:
+        poll_candidates:
+        - 2000-01-23T04:56:07.000+00:00
+        - 2000-01-23T04:56:07.000+00:00
+        venue: venue
+        allowed_roles:
+        - null
+        - null
+        description: description
+        poll_type: date_select
+        title: title
+        tags:
+        - tags
+        - tags
+        fee_settings:
+        - applicable_generation: applicable_generation
+          applicable_role: null
+          fee:
+            amount: 0
+            currency: JPY
+        - applicable_generation: applicable_generation
+          applicable_role: null
+          fee:
+            amount: 0
+            currency: JPY
+      properties:
+        title:
+          description: イベントタイトル
+          maxLength: 200
+          minLength: 1
+          type: string
+        description:
+          description: イベントの説明
+          maxLength: 1000
+          type: string
+        venue:
+          description: 会場
+          maxLength: 200
+          type: string
+        allowed_roles:
+          description: 参加可能な役割
+          items:
+            $ref: '#/components/schemas/UserRole'
+          type: array
+        tags:
+          description: タグ
+          items:
+            type: string
+          type: array
+        fee_settings:
+          description: 料金設定
+          items:
+            $ref: '#/components/schemas/FeeSetting'
+          type: array
+        poll_type:
+          default: date_select
+          description: 日程調整タイプ
+          type: string
+        poll_candidates:
+          description: 日程候補（ISO 8601形式）
+          items:
+            format: date-time
+            type: string
+          type: array
+      required:
+      - allowed_roles
+      - title
+      type: object
+    CreateEventResponse:
+      example:
+        event_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+      properties:
+        event_id:
+          description: 作成されたイベントのID
+          format: uuid
+          type: string
+      required:
+      - event_id
+      type: object
+    User:
+      example:
+        generation: generation
+        role: null
+        user_id: user_id
+        name: name
+      properties:
+        user_id:
+          description: ユーザーID
+          type: string
+        name:
+          description: ユーザー名
+          type: string
+        role:
+          $ref: '#/components/schemas/UserRole'
+        generation:
+          description: "世代（例 \"2023\", \"2024\"）"
+          type: string
+      required:
+      - generation
+      - name
+      - role
+      - user_id
+      type: object
+    UserRole:
+      description: ユーザーの役割
+      enum:
+      - CircleAdmin
+      - RegularMember
+      - Alumni
+      - External
+      type: string
+    FeeSetting:
+      example:
+        applicable_generation: applicable_generation
+        applicable_role: null
+        fee:
+          amount: 0
+          currency: JPY
+      properties:
+        applicable_role:
+          $ref: '#/components/schemas/UserRole'
+        applicable_generation:
+          description: 適用世代
+          type: string
+        fee:
+          $ref: '#/components/schemas/Money'
+      required:
+      - applicable_role
+      - fee
+      type: object
+    Money:
+      example:
+        amount: 0
+        currency: JPY
+      properties:
+        amount:
+          description: 金額（最小単位）
+          minimum: 0
+          type: integer
+        currency:
+          default: JPY
+          description: 通貨コード
+          type: string
+      required:
+      - amount
+      - currency
+      type: object
+    HealthCheck:
+      example:
+        status: ok
+      properties:
+        status:
+          description: サービス状態
+          enum:
+          - ok
+          - error
+          type: string
+      required:
+      - status
+      type: object
+    Error:
+      properties:
+        error:
+          description: エラーメッセージ
+          type: string
+      required:
+      - error
+      type: object
