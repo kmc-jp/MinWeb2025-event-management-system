@@ -75,7 +75,7 @@ export default function LoginPage() {
         user_id: mockUser.id,
         name: mockUser.name,
         roles: mockUser.roles as string[],
-        generation: mockUser.generation,
+        generation: parseInt(mockUser.generation, 10),
       });
 
       // ログイン成功後、イベント一覧ページにリダイレクト

@@ -3,6 +3,7 @@ package http
 import (
 	"event-management-system/backend/internal/usecase/query"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -39,7 +40,12 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 // ListUsers はユーザー一覧取得エンドポイント
 func (h *UserHandler) ListUsers(c *gin.Context) {
 	role := c.Query("role")
-	generation := c.Query("generation")
+	generationStr := c.Query("generation")
+	generation, err := strconv.Atoi(generationStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid generation"})
+		return
+	}
 
 	users, err := h.userQueryUsecase.ListUsers(c.Request.Context(), role, generation)
 	if err != nil {

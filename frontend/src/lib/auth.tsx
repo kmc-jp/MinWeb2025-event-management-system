@@ -51,8 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser({
               user_id: mockUser.user_id,
               name: mockUser.name,
-              roles: mockUser.roles as string[],
-              generation: mockUser.generation,
+              roles: mockUser.roles,
+              generation: parseInt(mockUser.generation, 10),
             });
           } catch (error) {
             console.error('Mockユーザーデータの解析に失敗しました:', error);

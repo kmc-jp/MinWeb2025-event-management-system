@@ -30,11 +30,14 @@ export default function EventsPage() {
       const apiClient = getApiClient();
       const tagsParam = selectedTags.length > 0 ? selectedTags.join(',') : undefined;
       const response = await apiClient.listEvents(currentPage, pageSize, undefined, tagsParam);
-      setEvents(response.data.data);
+      const eventData = response.data.data.map((event: any) => ({
+        ...event,
+        schedule_deadline: event.schedule_deadline || undefined,
+      }));
+      setEvents(eventData);
       setTotalCount(response.data.total_count);
     } catch (error) {
       setError(handleApiError(error));
-    } finally {
       setLoading(false);
     }
   };
