@@ -1,14 +1,20 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { DefaultApi, CreateEventRequest, UserRole } from "../../../../generated/api";
+import { Configuration } from "../../../../generated/configuration";
 
 export default function CreateEventPage() {
-  const [name, setName] = useState("");
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [venue, setVenue] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // APIクライアントの初期化
+  const apiClient = new DefaultApi(new Configuration({
+    basePath: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+  }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,29 +22,33 @@ export default function CreateEventPage() {
     setMessage("");
     
     try {
-      const res = await fetch("http://localhost:8080/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          description,
-          start_date: startDate,
-          end_date: endDate,
-        }),
-      });
+      // OpenAPI仕様に合わせたリクエストデータを作成
+      const createEventRequest: CreateEventRequest = {
+        title: title,
+        description: description || undefined,
+        venue: venue || undefined,
+        allowed_roles: [UserRole.RegularMember], // デフォルトで一般メンバーを許可
+        tags: [],
+        fee_settings: [],
+        poll_type: "date_select",
+        poll_candidates: []
+      };
+
+      const response = await apiClient.createEvent(createEventRequest);
       
-      if (res.ok) {
-        setMessage("イベント作成に成功しました");
-        setName("");
-        setDescription("");
-        setStartDate("");
-        setEndDate("");
+      setMessage(`イベント作成に成功しました。イベントID: ${response.data.event_id}`);
+      setTitle("");
+      setDescription("");
+      setVenue("");
+    } catch (error: any) {
+      console.error('API Error:', error);
+      if (error.response?.data?.error) {
+        setMessage(error.response.data.error);
+      } else if (error.message) {
+        setMessage(error.message);
       } else {
-        const data = await res.json();
-        setMessage(data.error || "エラーが発生しました");
+        setMessage("APIサーバーに接続できません。バックエンドが起動しているか確認してください。");
       }
-    } catch (error) {
-      setMessage("APIサーバーに接続できません。バックエンドが起動しているか確認してください。");
     } finally {
       setLoading(false);
     }
@@ -73,13 +83,14 @@ export default function CreateEventPage() {
       <form onSubmit={handleSubmit} style={{ marginTop: "2rem" }}>
         <div style={{ marginBottom: "1rem" }}>
           <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
-            イベント名 *
+            イベントタイトル *
           </label>
           <input 
             type="text"
-            value={name} 
-            onChange={e => setName(e.target.value)} 
+            value={title} 
+            onChange={e => setTitle(e.target.value)} 
             required
+            maxLength={200}
             style={{
               width: "100%",
               padding: "0.75rem",
@@ -98,6 +109,7 @@ export default function CreateEventPage() {
             value={description} 
             onChange={e => setDescription(e.target.value)}
             rows={4}
+            maxLength={1000}
             style={{
               width: "100%",
               padding: "0.75rem",
@@ -109,34 +121,15 @@ export default function CreateEventPage() {
           />
         </div>
         
-        <div style={{ marginBottom: "1rem" }}>
-          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
-            開始日 *
-          </label>
-          <input 
-            type="date" 
-            value={startDate} 
-            onChange={e => setStartDate(e.target.value)} 
-            required
-            style={{
-              width: "100%",
-              padding: "0.75rem",
-              border: "1px solid #ddd",
-              borderRadius: "0.25rem",
-              fontSize: "1rem"
-            }}
-          />
-        </div>
-        
         <div style={{ marginBottom: "2rem" }}>
           <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
-            終了日 *
+            会場
           </label>
           <input 
-            type="date" 
-            value={endDate} 
-            onChange={e => setEndDate(e.target.value)} 
-            required
+            type="text"
+            value={venue} 
+            onChange={e => setVenue(e.target.value)} 
+            maxLength={200}
             style={{
               width: "100%",
               padding: "0.75rem",

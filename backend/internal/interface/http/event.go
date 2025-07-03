@@ -30,7 +30,7 @@ type CreateEventRequest struct {
 	Description    string             `json:"description"`
 	Venue          string             `json:"venue"`
 	AllowedRoles   []model.UserRole   `json:"allowed_roles"`
-	Tags           []model.Tag        `json:"tags"`
+	Tags           []string           `json:"tags"`
 	FeeSettings    []model.FeeSetting `json:"fee_settings"`
 	PollType       string             `json:"poll_type"`
 	PollCandidates []string           `json:"poll_candidates"` // ISO 8601形式の日時文字列
@@ -44,11 +44,11 @@ func (h *EventHandler) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	// 認証情報からユーザーIDを取得（実際の実装では認証ミドルウェアから取得）
+	// 認証情報からユーザーIDを取得（開発用にダミーユーザーIDを使用）
 	organizerID := c.GetString("user_id")
 	if organizerID == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
+		// 開発用：認証が実装されていない場合はダミーユーザーIDを使用
+		organizerID = "dummy-user-001"
 	}
 
 	// 日時文字列をtime.Timeに変換
@@ -62,13 +62,19 @@ func (h *EventHandler) CreateEvent(c *gin.Context) {
 		pollCandidates[i] = date
 	}
 
+	// タグをmodel.Tagに変換
+	tags := make([]model.Tag, len(req.Tags))
+	for i, tag := range req.Tags {
+		tags[i] = model.Tag(tag)
+	}
+
 	cmd := &command.CreateEventCommand{
 		OrganizerID:    organizerID,
 		Title:          req.Title,
 		Description:    req.Description,
 		Venue:          req.Venue,
 		AllowedRoles:   req.AllowedRoles,
-		Tags:           req.Tags,
+		Tags:           tags,
 		FeeSettings:    req.FeeSettings,
 		PollType:       req.PollType,
 		PollCandidates: pollCandidates,
