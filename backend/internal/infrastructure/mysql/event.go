@@ -32,6 +32,11 @@ func NewMySQLEventRepository(dsn string) (repository_interface.EventRepository, 
 	return &MySQLEventRepository{db: db}, nil
 }
 
+// NewMySQLEventRepositoryWithDB は既存のデータベース接続を使用してMySQLイベントリポジトリを作成します
+func NewMySQLEventRepositoryWithDB(db *sql.DB) repository_interface.EventRepository {
+	return &MySQLEventRepository{db: db}
+}
+
 // Save はイベントを保存または更新します
 func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) error {
 	// イベント基本情報を保存
