@@ -340,6 +340,7 @@ class MockApiClient {
         status: 'DRAFT' as EventSummaryStatusEnum,
         organizer_name: 'Mock Organizer 1',
         tags: ['ワークショップ', '技術勉強会'],
+        allowed_roles: ['member'], // member役割のユーザーのみ参加可能
         confirmed_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 1週間後
         schedule_deadline: null,
         created_at: new Date().toISOString(),
@@ -351,6 +352,7 @@ class MockApiClient {
         status: 'CONFIRMED' as EventSummaryStatusEnum,
         organizer_name: 'Mock Organizer 2',
         tags: ['懇親会', 'LT会'],
+        allowed_roles: ['member'], // member役割のユーザーのみ参加可能
         confirmed_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 2週間後
         schedule_deadline: null,
         created_at: new Date().toISOString(),
@@ -362,6 +364,7 @@ class MockApiClient {
         status: 'SCHEDULE_POLLING' as EventSummaryStatusEnum,
         organizer_name: 'Mock Organizer 3',
         tags: ['ハッカソン', 'ワークショップ'],
+        allowed_roles: ['member'], // member役割のユーザーのみ参加可能
         confirmed_date: null,
         schedule_deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(), // 10日後
         created_at: new Date().toISOString(),

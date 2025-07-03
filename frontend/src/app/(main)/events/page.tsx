@@ -8,6 +8,7 @@ import { EventSummary, EventSummaryStatusEnum } from '../../../generated';
 import Calendar from './components/Calendar';
 import EventList from './components/EventList';
 import TagFilter from './components/TagFilter';
+import ParticipationFilter, { ParticipationFilterType } from './components/ParticipationFilter';
 
 export default function EventsPage() {
   const router = useRouter();
@@ -17,27 +18,70 @@ export default function EventsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [participationFilter, setParticipationFilter] = useState<ParticipationFilterType>('all');
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const pageSize = 50; // カレンダー表示のためにより多くのイベントを取得
 
   useEffect(() => {
+    fetchCurrentUser();
+  }, []);
+
+  useEffect(() => {
     fetchEvents();
-  }, [currentPage, selectedTags]);
+  }, [currentPage, selectedTags, participationFilter]);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const apiClient = getApiClient();
+      const response = await apiClient.getCurrentUser();
+      setCurrentUser(response.data);
+    } catch (error) {
+      console.error('ユーザー情報取得エラー:', error);
+    }
+  };
 
   const fetchEvents = async () => {
     try {
       setLoading(true);
+      setError(null);
       const apiClient = getApiClient();
       const tagsParam = selectedTags.length > 0 ? selectedTags.join(',') : undefined;
       const response = await apiClient.listEvents(currentPage, pageSize, undefined, tagsParam);
-      const eventData = response.data.data.map((event: any) => ({
+      let eventData = response.data.data.map((event: any) => ({
         ...event,
         schedule_deadline: event.schedule_deadline || undefined,
       }));
+
+      // 参加状況フィルターをフロントエンドで適用
+      if (participationFilter !== 'all' && currentUser) {
+        eventData = eventData.filter((event: any) => {
+          if (participationFilter === 'joinable') {
+            // 参加可能な役割を持っているかチェック（参加済みも含む）
+            const userRoles = currentUser.roles || [];
+            const allowedRoles = event.allowed_roles || [];
+            const isJoinable = userRoles.some((userRole: string) => allowedRoles.includes(userRole));
+            
+            // 参加済みかチェック（Mock実装では一部のイベントに参加済みとする）
+            const joinedEventIds = ['mock-event-1']; // Mock: イベント1に参加済み
+            const isJoined = joinedEventIds.includes(event.event_id);
+            
+            // 参加可能または参加済みの場合に表示
+            return isJoinable || isJoined;
+          } else if (participationFilter === 'joined') {
+            // 参加済みかチェック（Mock実装では一部のイベントに参加済みとする）
+            const joinedEventIds = ['mock-event-1']; // Mock: イベント1に参加済み
+            return joinedEventIds.includes(event.event_id);
+          }
+          return true;
+        });
+      }
+
       setEvents(eventData);
-      setTotalCount(response.data.total_count);
+      setTotalCount(eventData.length); // フィルター適用後の件数
     } catch (error) {
       setError(handleApiError(error));
+    } finally {
       setLoading(false);
     }
   };
@@ -53,6 +97,11 @@ export default function EventsPage() {
   const handleTagsChange = (tags: string[]) => {
     setSelectedTags(tags);
     setCurrentPage(1); // タグが変更されたら最初のページに戻る
+  };
+
+  const handleParticipationFilterChange = (filter: ParticipationFilterType) => {
+    setParticipationFilter(filter);
+    setCurrentPage(1); // フィルターが変更されたら最初のページに戻る
   };
 
   if (loading && events.length === 0) {
@@ -100,6 +149,10 @@ export default function EventsPage() {
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <TagFilter selectedTags={selectedTags} onTagsChange={handleTagsChange} />
+            <ParticipationFilter 
+              selectedFilter={participationFilter} 
+              onFilterChange={handleParticipationFilterChange} 
+            />
             {selectedTags.length > 0 && (
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-500">選択中:</span>
@@ -152,7 +205,9 @@ export default function EventsPage() {
         </div>
 
         {/* イベント表示 */}
-        {events.length === 0 ? (
+        {viewMode === 'calendar' ? (
+          <Calendar events={events} onEventClick={handleEventClick} />
+        ) : events.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-kmc-gray-500 text-lg">イベントがありません</p>
             <p className="text-kmc-gray-400 mt-2">
@@ -162,8 +217,6 @@ export default function EventsPage() {
               }
             </p>
           </div>
-        ) : viewMode === 'calendar' ? (
-          <Calendar events={events} onEventClick={handleEventClick} />
         ) : (
           <EventList events={events} onEventClick={handleEventClick} />
         )}
