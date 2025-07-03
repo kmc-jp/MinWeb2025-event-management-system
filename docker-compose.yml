@@ -37,12 +37,11 @@ services:
       - DB_DATABASE=${DB_DATABASE:-events_db}
       - DB_USER=${DB_USER:-events_user}
       - DB_PASSWORD=${DB_PASSWORD:-events_password}
-      - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-rootpassword}
+      - GIN_MODE=debug
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - app-network
+    restart: unless-stopped
 
   frontend:
     build:
@@ -56,14 +55,10 @@ services:
       - /app/node_modules
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - NODE_ENV=development
     depends_on:
       - backend
-    networks:
-      - app-network
-
-networks:
-  app-network:
-    driver: bridge
+    restart: unless-stopped
 
 volumes:
   db_data: 
