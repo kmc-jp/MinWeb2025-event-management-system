@@ -2,16 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { getApiClient, handleApiError } from '../../../lib/api';
 import { EventSummary, EventSummaryStatusEnum } from '../../../generated';
+import Calendar from './components/Calendar';
 
 export default function EventsPage() {
+  const router = useRouter();
   const [events, setEvents] = useState<EventSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const pageSize = 10;
+  const pageSize = 50; // カレンダー表示のためにより多くのイベントを取得
 
   useEffect(() => {
     fetchEvents();
@@ -31,51 +34,13 @@ export default function EventsPage() {
     }
   };
 
-  const getStatusColor = (status: EventSummaryStatusEnum) => {
-    switch (status) {
-      case 'DRAFT':
-        return 'bg-gray-100 text-gray-800';
-      case 'SCHEDULE_POLLING':
-        return 'bg-blue-100 text-blue-800';
-      case 'CONFIRMED':
-        return 'bg-green-100 text-green-800';
-      case 'FINISHED':
-        return 'bg-purple-100 text-purple-800';
-      case 'CANCELLED':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusText = (status: EventSummaryStatusEnum) => {
-    switch (status) {
-      case 'DRAFT':
-        return '下書き';
-      case 'SCHEDULE_POLLING':
-        return '日程調整中';
-      case 'CONFIRMED':
-        return '確定';
-      case 'FINISHED':
-        return '終了';
-      case 'CANCELLED':
-        return 'キャンセル';
-      default:
-        return status;
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('ja-JP', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  // カレンダーコンポーネントで使用するため、これらの関数は削除
 
   const totalPages = Math.ceil(totalCount / pageSize);
+
+  const handleEventClick = (eventId: string) => {
+    router.push(`/events/${eventId}`);
+  };
 
   if (loading && events.length === 0) {
     return (
@@ -118,44 +83,18 @@ export default function EventsPage() {
           </div>
         )}
 
-        {/* イベント一覧 */}
+        {/* カレンダー表示 */}
         {events.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-kmc-gray-500 text-lg">イベントがありません</p>
             <p className="text-kmc-gray-400 mt-2">新しいイベントを作成してみましょう</p>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {events.map((event) => (
-              <div key={event.event_id} className="card p-6 hover:shadow-lg transition-shadow duration-200">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-lg font-semibold text-kmc-gray-900 line-clamp-2">
-                    {event.title}
-                  </h3>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
-                    {getStatusText(event.status)}
-                  </span>
-                </div>
-                
-                <div className="space-y-2 text-sm text-kmc-gray-600">
-                  <p>主催者: {event.organizer_name}</p>
-                  <p>作成日: {formatDate(event.created_at)}</p>
-                </div>
-                
-                <div className="mt-4">
-                  <Link
-                    href={`/events/${event.event_id}`}
-                    className="text-kmc-500 hover:text-kmc-600 font-medium text-sm"
-                  >
-                    詳細を見る →
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
+          <Calendar events={events} onEventClick={handleEventClick} />
         )}
 
-        {/* ページネーション */}
+        {/* ページネーション（カレンダー表示では非表示） */}
+        {/* 
         {totalPages > 1 && (
           <div className="mt-8 flex justify-center">
             <nav className="flex space-x-2">
@@ -181,6 +120,7 @@ export default function EventsPage() {
             </nav>
           </div>
         )}
+        */}
       </div>
     </div>
   );
