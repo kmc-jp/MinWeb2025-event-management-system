@@ -8,27 +8,31 @@ import (
 
 // EventSummaryDTO はイベント一覧表示用のDTO
 type EventSummaryDTO struct {
-	EventID   string            `json:"event_id"`
-	Title     string            `json:"title"`
-	Status    model.EventStatus `json:"status"`
-	Venue     string            `json:"venue"`
-	Organizer string            `json:"organizer_name"`
-	CreatedAt string            `json:"created_at"`
+	EventID          string            `json:"event_id"`
+	Title            string            `json:"title"`
+	Status           model.EventStatus `json:"status"`
+	Venue            string            `json:"venue"`
+	Organizer        string            `json:"organizer_name"`
+	ConfirmedDate    *string           `json:"confirmed_date,omitempty"`
+	ScheduleDeadline *string           `json:"schedule_deadline,omitempty"`
+	CreatedAt        string            `json:"created_at"`
 }
 
 // EventDetailsDTO はイベント詳細表示用のDTO
 type EventDetailsDTO struct {
-	EventID      string             `json:"event_id"`
-	Title        string             `json:"title"`
-	Description  string             `json:"description"`
-	Status       model.EventStatus  `json:"status"`
-	Venue        string             `json:"venue"`
-	AllowedRoles []model.UserRole   `json:"allowed_roles"`
-	Tags         []model.Tag        `json:"tags"`
-	FeeSettings  []model.FeeSetting `json:"fee_settings"`
-	Organizer    string             `json:"organizer_name"`
-	CreatedAt    string             `json:"created_at"`
-	UpdatedAt    string             `json:"updated_at"`
+	EventID          string             `json:"event_id"`
+	Title            string             `json:"title"`
+	Description      string             `json:"description"`
+	Status           model.EventStatus  `json:"status"`
+	Venue            string             `json:"venue"`
+	AllowedRoles     []model.UserRole   `json:"allowed_roles"`
+	Tags             []model.Tag        `json:"tags"`
+	FeeSettings      []model.FeeSetting `json:"fee_settings"`
+	ConfirmedDate    *string            `json:"confirmed_date,omitempty"`
+	ScheduleDeadline *string            `json:"schedule_deadline,omitempty"`
+	Organizer        string             `json:"organizer_name"`
+	CreatedAt        string             `json:"created_at"`
+	UpdatedAt        string             `json:"updated_at"`
 }
 
 // ListEventsQuery はイベント一覧取得のクエリ
@@ -82,13 +86,27 @@ func (uc *EventQueryUsecase) ListEvents(ctx context.Context, query *ListEventsQu
 	// DTO変換
 	dtos := make([]EventSummaryDTO, len(pagedEvents))
 	for i, event := range pagedEvents {
+		var confirmedDate *string
+		if event.ConfirmedDate != nil {
+			dateStr := event.ConfirmedDate.Format("2006-01-02T15:04:05Z")
+			confirmedDate = &dateStr
+		}
+
+		var scheduleDeadline *string
+		if event.ScheduleDeadline != nil {
+			dateStr := event.ScheduleDeadline.Format("2006-01-02T15:04:05Z")
+			scheduleDeadline = &dateStr
+		}
+
 		dtos[i] = EventSummaryDTO{
-			EventID:   event.EventID,
-			Title:     event.Title,
-			Status:    event.Status,
-			Venue:     event.Venue,
-			Organizer: event.Organizer.Name,
-			CreatedAt: event.CreatedAt.Format("2006-01-02T15:04:05Z"),
+			EventID:          event.EventID,
+			Title:            event.Title,
+			Status:           event.Status,
+			Venue:            event.Venue,
+			Organizer:        event.Organizer.Name,
+			ConfirmedDate:    confirmedDate,
+			ScheduleDeadline: scheduleDeadline,
+			CreatedAt:        event.CreatedAt.Format("2006-01-02T15:04:05Z"),
 		}
 	}
 
@@ -107,18 +125,32 @@ func (uc *EventQueryUsecase) GetEventDetails(ctx context.Context, eventID string
 		return nil, err
 	}
 
+	var confirmedDate *string
+	if event.ConfirmedDate != nil {
+		dateStr := event.ConfirmedDate.Format("2006-01-02T15:04:05Z")
+		confirmedDate = &dateStr
+	}
+
+	var scheduleDeadline *string
+	if event.ScheduleDeadline != nil {
+		dateStr := event.ScheduleDeadline.Format("2006-01-02T15:04:05Z")
+		scheduleDeadline = &dateStr
+	}
+
 	return &EventDetailsDTO{
-		EventID:      event.EventID,
-		Title:        event.Title,
-		Description:  event.Description,
-		Status:       event.Status,
-		Venue:        event.Venue,
-		AllowedRoles: event.AllowedRoles,
-		Tags:         event.Tags,
-		FeeSettings:  event.FeeSettings,
-		Organizer:    event.Organizer.Name,
-		CreatedAt:    event.CreatedAt.Format("2006-01-02T15:04:05Z"),
-		UpdatedAt:    event.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+		EventID:          event.EventID,
+		Title:            event.Title,
+		Description:      event.Description,
+		Status:           event.Status,
+		Venue:            event.Venue,
+		AllowedRoles:     event.AllowedRoles,
+		Tags:             event.Tags,
+		FeeSettings:      event.FeeSettings,
+		ConfirmedDate:    confirmedDate,
+		ScheduleDeadline: scheduleDeadline,
+		Organizer:        event.Organizer.Name,
+		CreatedAt:        event.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		UpdatedAt:        event.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 	}, nil
 }
 

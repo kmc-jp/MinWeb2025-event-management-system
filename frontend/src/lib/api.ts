@@ -330,6 +330,9 @@ class MockApiClient {
         title: 'Mock Event 1',
         status: 'DRAFT' as EventSummaryStatusEnum,
         organizer_name: 'Mock Organizer 1',
+        tags: ['ワークショップ', '技術勉強会'],
+        confirmed_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 1週間後
+        schedule_deadline: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
@@ -338,15 +341,48 @@ class MockApiClient {
         title: 'Mock Event 2',
         status: 'CONFIRMED' as EventSummaryStatusEnum,
         organizer_name: 'Mock Organizer 2',
+        tags: ['懇親会', 'LT会'],
+        confirmed_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 2週間後
+        schedule_deadline: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        event_id: 'mock-event-3',
+        title: 'Mock Event 3',
+        status: 'SCHEDULE_POLLING' as EventSummaryStatusEnum,
+        organizer_name: 'Mock Organizer 3',
+        tags: ['ハッカソン', 'ワークショップ'],
+        confirmed_date: null,
+        schedule_deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(), // 10日後
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
     ];
 
+    // フィルタリング
+    let filteredEvents = mockEvents;
+
+    // ステータスフィルタ
+    if (status) {
+      filteredEvents = filteredEvents.filter(event => event.status === status);
+    }
+
+    // タグフィルタ
+    if (tags) {
+      const selectedTags = tags.split(',').map(tag => tag.trim());
+      filteredEvents = filteredEvents.filter(event => {
+        if (!event.tags) return false;
+        return selectedTags.some(selectedTag => 
+          event.tags!.some(eventTag => eventTag === selectedTag)
+        );
+      });
+    }
+
     return {
       data: {
-        data: mockEvents,
-        total_count: mockEvents.length,
+        data: filteredEvents,
+        total_count: filteredEvents.length,
         page: page || 1,
         page_size: pageSize || 10,
       }

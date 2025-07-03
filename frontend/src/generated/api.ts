@@ -96,6 +96,18 @@ export interface CreateEventRequest {
      * @memberof CreateEventRequest
      */
     'poll_candidates'?: Array<string>;
+    /**
+     * 確定した日程
+     * @type {string}
+     * @memberof CreateEventRequest
+     */
+    'confirmed_date'?: string;
+    /**
+     * 日程確定予定日
+     * @type {string}
+     * @memberof CreateEventRequest
+     */
+    'schedule_deadline'?: string;
 }
 /**
  * 
@@ -203,6 +215,18 @@ export interface EventDetails {
      */
     'fee_settings'?: Array<FeeSetting>;
     /**
+     * 確定した日程
+     * @type {string}
+     * @memberof EventDetails
+     */
+    'confirmed_date'?: string;
+    /**
+     * 日程確定予定日
+     * @type {string}
+     * @memberof EventDetails
+     */
+    'schedule_deadline'?: string;
+    /**
      * 主催者名
      * @type {string}
      * @memberof EventDetails
@@ -269,6 +293,18 @@ export interface EventSummary {
      */
     'organizer_name': string;
     /**
+     * 確定した日程
+     * @type {string}
+     * @memberof EventSummary
+     */
+    'confirmed_date'?: string;
+    /**
+     * 日程確定予定日
+     * @type {string}
+     * @memberof EventSummary
+     */
+    'schedule_deadline'?: string;
+    /**
      * 作成日時
      * @type {string}
      * @memberof EventSummary
@@ -293,7 +329,7 @@ export type EventSummaryStatusEnum = typeof EventSummaryStatusEnum[keyof typeof 
  */
 export interface FeeSetting {
     /**
-     * 適用世代（例: 2023, 2024）
+     * 適用世代（1-100の範囲）
      * @type {number}
      * @memberof FeeSetting
      */
@@ -569,11 +605,11 @@ export interface User {
      */
     'roles': Array<string>;
     /**
-     * 世代（例 \"2023\", \"2024\"）
-     * @type {string}
+     * 世代（1-100の範囲）
+     * @type {number}
      * @memberof User
      */
-    'generation': string;
+    'generation': number;
 }
 /**
  * 
@@ -594,11 +630,11 @@ export interface UserSummary {
      */
     'name': string;
     /**
-     * 世代
-     * @type {string}
+     * 世代（1-100の範囲）
+     * @type {number}
      * @memberof UserSummary
      */
-    'generation': string;
+    'generation': number;
 }
 
 /**

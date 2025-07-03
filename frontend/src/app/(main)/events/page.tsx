@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { getApiClient, handleApiError } from '../../../lib/api';
 import { EventSummary, EventSummaryStatusEnum } from '../../../generated';
 import Calendar from './components/Calendar';
+import EventList from './components/EventList';
+import TagFilter from './components/TagFilter';
 
 export default function EventsPage() {
   const router = useRouter();
@@ -14,17 +16,20 @@ export default function EventsPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   const pageSize = 50; // カレンダー表示のためにより多くのイベントを取得
 
   useEffect(() => {
     fetchEvents();
-  }, [currentPage]);
+  }, [currentPage, selectedTags]);
 
   const fetchEvents = async () => {
     try {
       setLoading(true);
       const apiClient = getApiClient();
-      const response = await apiClient.listEvents(currentPage, pageSize);
+      const tagsParam = selectedTags.length > 0 ? selectedTags.join(',') : undefined;
+      const response = await apiClient.listEvents(currentPage, pageSize, undefined, tagsParam);
       setEvents(response.data.data);
       setTotalCount(response.data.total_count);
     } catch (error) {
@@ -40,6 +45,11 @@ export default function EventsPage() {
 
   const handleEventClick = (eventId: string) => {
     router.push(`/events/${eventId}`);
+  };
+
+  const handleTagsChange = (tags: string[]) => {
+    setSelectedTags(tags);
+    setCurrentPage(1); // タグが変更されたら最初のページに戻る
   };
 
   if (loading && events.length === 0) {
@@ -83,14 +93,76 @@ export default function EventsPage() {
           </div>
         )}
 
-        {/* カレンダー表示 */}
+        {/* フィルターと表示モード */}
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <TagFilter selectedTags={selectedTags} onTagsChange={handleTagsChange} />
+            {selectedTags.length > 0 && (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-500">選択中:</span>
+                <div className="flex flex-wrap gap-2">
+                  {selectedTags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-kmc-100 text-kmc-800"
+                    >
+                      {tag}
+                      <button
+                        onClick={() => handleTagsChange(selectedTags.filter(t => t !== tag))}
+                        className="ml-1 text-kmc-600 hover:text-kmc-800"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 表示モード切り替え */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-500">表示:</span>
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('calendar')}
+                className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                  viewMode === 'calendar'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                カレンダー
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                リスト
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* イベント表示 */}
         {events.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-kmc-gray-500 text-lg">イベントがありません</p>
-            <p className="text-kmc-gray-400 mt-2">新しいイベントを作成してみましょう</p>
+            <p className="text-kmc-gray-400 mt-2">
+              {selectedTags.length > 0 
+                ? '選択されたタグに一致するイベントがありません' 
+                : '新しいイベントを作成してみましょう'
+              }
+            </p>
           </div>
-        ) : (
+        ) : viewMode === 'calendar' ? (
           <Calendar events={events} onEventClick={handleEventClick} />
+        ) : (
+          <EventList events={events} onEventClick={handleEventClick} />
         )}
 
         {/* ページネーション（カレンダー表示では非表示） */}

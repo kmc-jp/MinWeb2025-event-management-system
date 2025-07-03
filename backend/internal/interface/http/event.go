@@ -26,16 +26,18 @@ func NewEventHandler(ecu *command.EventCommandUsecase, equ *query.EventQueryUsec
 
 // CreateEventRequest はイベント作成リクエスト
 type CreateEventRequest struct {
-	Title          string             `json:"title" binding:"required"`
-	Description    string             `json:"description"`
-	Venue          string             `json:"venue"`
-	AllowedRoles   []model.UserRole   `json:"allowed_roles"`
-	EditableRoles  []model.UserRole   `json:"editable_roles"`
-	AllowedUsers   []string           `json:"allowed_users"`
-	Tags           []string           `json:"tags"`
-	FeeSettings    []model.FeeSetting `json:"fee_settings"`
-	PollType       string             `json:"poll_type"`
-	PollCandidates []string           `json:"poll_candidates"` // ISO 8601形式の日時文字列
+	Title            string             `json:"title" binding:"required"`
+	Description      string             `json:"description"`
+	Venue            string             `json:"venue"`
+	AllowedRoles     []model.UserRole   `json:"allowed_roles"`
+	EditableRoles    []model.UserRole   `json:"editable_roles"`
+	AllowedUsers     []string           `json:"allowed_users"`
+	Tags             []string           `json:"tags"`
+	FeeSettings      []model.FeeSetting `json:"fee_settings"`
+	PollType         string             `json:"poll_type"`
+	PollCandidates   []string           `json:"poll_candidates"`   // ISO 8601形式の日時文字列
+	ConfirmedDate    *string            `json:"confirmed_date"`    // 確定した日程（ISO 8601形式）
+	ScheduleDeadline *string            `json:"schedule_deadline"` // 日程確定予定日（ISO 8601形式）
 }
 
 // UpdateEventRequest はイベント更新リクエスト
@@ -81,18 +83,41 @@ func (h *EventHandler) CreateEvent(c *gin.Context) {
 		tags[i] = model.Tag(tag)
 	}
 
+	// 日程情報を処理
+	var confirmedDate *time.Time
+	if req.ConfirmedDate != nil {
+		date, err := time.Parse(time.RFC3339, *req.ConfirmedDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid confirmed_date format"})
+			return
+		}
+		confirmedDate = &date
+	}
+
+	var scheduleDeadline *time.Time
+	if req.ScheduleDeadline != nil {
+		date, err := time.Parse(time.RFC3339, *req.ScheduleDeadline)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid schedule_deadline format"})
+			return
+		}
+		scheduleDeadline = &date
+	}
+
 	cmd := &command.CreateEventCommand{
-		OrganizerID:    organizerID,
-		Title:          req.Title,
-		Description:    req.Description,
-		Venue:          req.Venue,
-		AllowedRoles:   req.AllowedRoles,
-		EditableRoles:  req.EditableRoles,
-		AllowedUsers:   req.AllowedUsers,
-		Tags:           tags,
-		FeeSettings:    req.FeeSettings,
-		PollType:       req.PollType,
-		PollCandidates: pollCandidates,
+		OrganizerID:      organizerID,
+		Title:            req.Title,
+		Description:      req.Description,
+		Venue:            req.Venue,
+		AllowedRoles:     req.AllowedRoles,
+		EditableRoles:    req.EditableRoles,
+		AllowedUsers:     req.AllowedUsers,
+		Tags:             tags,
+		FeeSettings:      req.FeeSettings,
+		PollType:         req.PollType,
+		PollCandidates:   pollCandidates,
+		ConfirmedDate:    confirmedDate,
+		ScheduleDeadline: scheduleDeadline,
 	}
 
 	eventID, err := h.eventCommandUsecase.CreateEvent(c.Request.Context(), cmd)

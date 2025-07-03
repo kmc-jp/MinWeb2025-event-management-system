@@ -8,11 +8,10 @@ interface CalendarProps {
   onEventClick: (eventId: string) => void;
 }
 
-type ViewMode = 'month' | 'week';
+// 週カレンダーを削除し、月カレンダーのみに変更
 
 export default function Calendar({ events, onEventClick }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<ViewMode>('month');
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -33,22 +32,21 @@ export default function Calendar({ events, onEventClick }: CalendarProps) {
     return days;
   };
 
-  const getWeekDays = (date: Date) => {
-    const startOfWeek = new Date(date);
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-    
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(startOfWeek);
-      day.setDate(day.getDate() + i);
-      days.push(day);
-    }
-    
-    return days;
-  };
+  // 週カレンダー機能を削除
 
   const getEventsForDate = (date: Date) => {
     return events.filter(event => {
+      // 日程確定済みの場合は確定した日程で表示
+      if ((event as any).confirmed_date) {
+        const eventDate = new Date((event as any).confirmed_date);
+        return eventDate.toDateString() === date.toDateString();
+      }
+      // 日程調整中の場合は日程確定予定日で表示
+      if ((event as any).schedule_deadline) {
+        const eventDate = new Date((event as any).schedule_deadline);
+        return eventDate.toDateString() === date.toDateString();
+      }
+      // どちらもない場合は作成日で表示
       const eventDate = new Date(event.created_at);
       return eventDate.toDateString() === date.toDateString();
     });
@@ -86,21 +84,13 @@ export default function Calendar({ events, onEventClick }: CalendarProps) {
 
   const goToPrevious = () => {
     const newDate = new Date(currentDate);
-    if (viewMode === 'month') {
-      newDate.setMonth(newDate.getMonth() - 1);
-    } else {
-      newDate.setDate(newDate.getDate() - 7);
-    }
+    newDate.setMonth(newDate.getMonth() - 1);
     setCurrentDate(newDate);
   };
 
   const goToNext = () => {
     const newDate = new Date(currentDate);
-    if (viewMode === 'month') {
-      newDate.setMonth(newDate.getMonth() + 1);
-    } else {
-      newDate.setDate(newDate.getDate() + 7);
-    }
+    newDate.setMonth(newDate.getMonth() + 1);
     setCurrentDate(newDate);
   };
 
@@ -109,7 +99,7 @@ export default function Calendar({ events, onEventClick }: CalendarProps) {
   };
 
   const getTodayButtonText = () => {
-    return viewMode === 'month' ? '今月に戻る' : '今週に戻る';
+    return '今月に戻る';
   };
 
   const getStatusColor = (status: string) => {
@@ -169,6 +159,9 @@ export default function Calendar({ events, onEventClick }: CalendarProps) {
                     >
                       <div className={`px-1 py-0.5 rounded text-xs ${getStatusColor(event.status)}`}>
                         {event.title}
+                        {event.status === 'SCHEDULE_POLLING' && (
+                          <span className="ml-1 text-orange-600">(調整中)</span>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -186,50 +179,7 @@ export default function Calendar({ events, onEventClick }: CalendarProps) {
     );
   };
 
-  const renderWeekView = () => {
-    const days = getWeekDays(currentDate);
-    const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
-
-    return (
-      <div className="bg-white rounded-lg shadow">
-        <div className="grid grid-cols-7 gap-px bg-gray-200">
-          {weekDays.map((day, index) => {
-            const date = days[index];
-            if (!date) return null;
-            
-            const dayEvents = getEventsForDate(date);
-            const isToday = date.toDateString() === new Date().toDateString();
-            
-            return (
-              <div key={day} className="bg-gray-50 p-2">
-                <div className={`text-center text-sm font-medium mb-2 ${
-                  isToday ? 'bg-kmc-500 text-white rounded-full w-6 h-6 flex items-center justify-center mx-auto' : 'text-gray-700'
-                }`}>
-                  {day}
-                </div>
-                <div className="text-xs text-gray-500 text-center mb-2">
-                  {formatDate(date)}
-                </div>
-                <div className="space-y-1">
-                  {dayEvents.map(event => (
-                    <div
-                      key={event.event_id}
-                      onClick={() => onEventClick(event.event_id)}
-                      className="text-xs p-1 rounded cursor-pointer hover:bg-gray-100"
-                    >
-                      <div className={`px-1 py-0.5 rounded text-xs ${getStatusColor(event.status)}`}>
-                        {event.title}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
+  // 週カレンダー表示機能を削除
 
   return (
     <div className="space-y-4">
@@ -255,39 +205,15 @@ export default function Calendar({ events, onEventClick }: CalendarProps) {
             →
           </button>
           <h2 className="text-xl font-semibold text-gray-900">
-            {viewMode === 'month' ? formatMonth(currentDate) : (() => {
-              const weekDays = getWeekDays(currentDate);
-              return weekDays[0] ? formatWeekRange(weekDays[0]) : formatDate(currentDate);
-            })()}
+            {formatMonth(currentDate)}
           </h2>
         </div>
         
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setViewMode('month')}
-            className={`px-4 py-2 rounded ${
-              viewMode === 'month' 
-                ? 'bg-kmc-500 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            月
-          </button>
-          <button
-            onClick={() => setViewMode('week')}
-            className={`px-4 py-2 rounded ${
-              viewMode === 'week' 
-                ? 'bg-kmc-500 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            週
-          </button>
-        </div>
+        {/* 週カレンダーボタンを削除 */}
       </div>
 
-      {/* カレンダー表示 */}
-      {viewMode === 'month' ? renderMonthView() : renderWeekView()}
+      {/* 月カレンダー表示 */}
+      {renderMonthView()}
     </div>
   );
 } 

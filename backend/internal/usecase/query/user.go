@@ -11,7 +11,7 @@ type UserDTO struct {
 	UserID     string           `json:"user_id"`
 	Name       string           `json:"name"`
 	Roles      []model.UserRole `json:"roles"`
-	Generation string           `json:"generation"`
+	Generation int              `json:"generation"`
 }
 
 // UserQueryUsecase はユーザークエリのユースケース
@@ -40,7 +40,7 @@ func (uc *UserQueryUsecase) GetUser(ctx context.Context, userID string) (*UserDT
 }
 
 // ListUsers はユーザー一覧を取得
-func (uc *UserQueryUsecase) ListUsers(ctx context.Context, role, generation string) ([]*UserSummaryDTO, error) {
+func (uc *UserQueryUsecase) ListUsers(ctx context.Context, role string, generation int) ([]*UserSummaryDTO, error) {
 	users, err := uc.UserRepo.FindAll(ctx)
 	if err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func (uc *UserQueryUsecase) ListUsers(ctx context.Context, role, generation stri
 		}
 
 		// 世代フィルタ
-		if generation != "" && user.Generation != generation {
+		if generation != 0 && user.Generation != generation {
 			continue
 		}
 

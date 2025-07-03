@@ -694,6 +694,14 @@ components:
         organizer_name:
           type: string
           description: 主催者名
+        confirmed_date:
+          type: string
+          format: date-time
+          description: 確定した日程
+        schedule_deadline:
+          type: string
+          format: date-time
+          description: 日程確定予定日
         created_at:
           type: string
           format: date-time
@@ -745,6 +753,14 @@ components:
           items:
             $ref: "#/components/schemas/FeeSetting"
           description: 料金設定
+        confirmed_date:
+          type: string
+          format: date-time
+          description: 確定した日程
+        schedule_deadline:
+          type: string
+          format: date-time
+          description: 日程確定予定日
         organizer_name:
           type: string
           description: 主催者名
@@ -832,6 +848,14 @@ components:
             type: string
             format: date-time
           description: 日程候補（ISO 8601形式）
+        confirmed_date:
+          type: string
+          format: date-time
+          description: 確定した日程
+        schedule_deadline:
+          type: string
+          format: date-time
+          description: 日程確定予定日
 
       required:
         - title
@@ -904,8 +928,10 @@ components:
             $ref: "#/components/schemas/UserRole"
           description: ユーザーの役割リスト
         generation:
-          type: string
-          description: 世代（例 "2023", "2024"）
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: 世代（1-100の範囲）
       required:
         - user_id
         - name
@@ -1011,8 +1037,10 @@ components:
           type: string
           description: ユーザー名
         generation:
-          type: string
-          description: 世代
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: 世代（1-100の範囲）
       required:
         - user_id
         - name
@@ -1052,7 +1080,9 @@ components:
       properties:
         applicable_generation:
           type: integer
-          description: "適用世代（例: 2023, 2024）"
+          minimum: 1
+          maximum: 100
+          description: "適用世代（1-100の範囲）"
         fee:
           $ref: "#/components/schemas/Money"
       required:

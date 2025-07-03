@@ -1,7 +1,6 @@
 package model
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -82,27 +81,29 @@ func NewTagEntity(name, createdBy string) *TagEntity {
 // Event: イベント集約
 
 type Event struct {
-	EventID       string
-	Organizer     *User
-	Title         string
-	Description   string
-	Status        EventStatus
-	AllowedRoles  []UserRole
-	EditableRoles []UserRole
-	AllowedUsers  []string
-	Tags          []Tag
-	Venue         string
-	SchedulePoll  *SchedulePoll
-	FeeSettings   []FeeSetting
-	Comments      []Comment
-	EventReports  []EventReport
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	EventID          string
+	Organizer        *User
+	Title            string
+	Description      string
+	Status           EventStatus
+	AllowedRoles     []UserRole
+	EditableRoles    []UserRole
+	AllowedUsers     []string
+	Tags             []Tag
+	Venue            string
+	SchedulePoll     *SchedulePoll
+	FeeSettings      []FeeSetting
+	Comments         []Comment
+	EventReports     []EventReport
+	ConfirmedDate    *time.Time // 確定した日程
+	ScheduleDeadline *time.Time // 日程確定予定日
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 // --- ファクトリ・振る舞い ---
 
-func NewEvent(organizer *User, title, description, venue string, allowedRoles, editableRoles []UserRole, allowedUsers []string, tags []Tag, feeSettings []FeeSetting, pollType string, pollCandidates []time.Time) *Event {
+func NewEvent(organizer *User, title, description, venue string, allowedRoles, editableRoles []UserRole, allowedUsers []string, tags []Tag, feeSettings []FeeSetting, pollType string, pollCandidates []time.Time, confirmedDate *time.Time, scheduleDeadline *time.Time) *Event {
 	now := time.Now()
 	return &Event{
 		EventID:       uuid.New().String(),
@@ -120,11 +121,13 @@ func NewEvent(organizer *User, title, description, venue string, allowedRoles, e
 			CandidateDates: pollCandidates,
 			Responses:      make(map[string][]time.Time),
 		},
-		FeeSettings:  feeSettings,
-		Comments:     []Comment{},
-		EventReports: []EventReport{},
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		FeeSettings:      feeSettings,
+		Comments:         []Comment{},
+		EventReports:     []EventReport{},
+		ConfirmedDate:    confirmedDate,
+		ScheduleDeadline: scheduleDeadline,
+		CreatedAt:        now,
+		UpdatedAt:        now,
 	}
 }
 
@@ -187,14 +190,8 @@ func (e *Event) AddComment(userID, content string) {
 }
 
 func (e *Event) GetApplicableFee(user *User) *Money {
-	// ユーザーの世代を整数に変換
-	userGeneration, err := strconv.ParseInt(user.Generation, 10, 64)
-	if err != nil {
-		return nil
-	}
-
 	for _, fs := range e.FeeSettings {
-		if fs.ApplicableGeneration == userGeneration {
+		if fs.ApplicableGeneration == int64(user.Generation) {
 			return &fs.Fee
 		}
 	}

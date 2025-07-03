@@ -47,14 +47,16 @@ func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) err
 
 	// イベント基本情報を保存
 	query := `
-		INSERT INTO events (event_id, title, description, status, venue, organizer_id, editable_roles, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO events (event_id, title, description, status, venue, organizer_id, editable_roles, confirmed_date, schedule_deadline, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON DUPLICATE KEY UPDATE
 		title = VALUES(title),
 		description = VALUES(description),
 		status = VALUES(status),
 		venue = VALUES(venue),
 		editable_roles = VALUES(editable_roles),
+		confirmed_date = VALUES(confirmed_date),
+		schedule_deadline = VALUES(schedule_deadline),
 		updated_at = VALUES(updated_at)
 	`
 
@@ -66,6 +68,8 @@ func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) err
 		event.Venue,
 		event.Organizer.UserID,
 		editableRolesJSON,
+		event.ConfirmedDate,
+		event.ScheduleDeadline,
 		event.CreatedAt,
 		event.UpdatedAt,
 	)
@@ -106,7 +110,7 @@ func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) err
 // FindByID は指定されたIDのイベントを取得します
 func (r *MySQLEventRepository) FindByID(ctx context.Context, id string) (*model.Event, error) {
 	query := `
-		SELECT e.event_id, e.title, e.description, e.status, e.venue, e.editable_roles, e.created_at, e.updated_at,
+		SELECT e.event_id, e.title, e.description, e.status, e.venue, e.editable_roles, e.confirmed_date, e.schedule_deadline, e.created_at, e.updated_at,
 		       u.user_id, u.name, u.generation
 		FROM events e
 		JOIN users u ON e.organizer_id = u.user_id
@@ -127,6 +131,8 @@ func (r *MySQLEventRepository) FindByID(ctx context.Context, id string) (*model.
 		&statusStr,
 		&event.Venue,
 		&editableRolesJSON,
+		&event.ConfirmedDate,
+		&event.ScheduleDeadline,
 		&event.CreatedAt,
 		&event.UpdatedAt,
 		&organizer.UserID,
@@ -159,7 +165,7 @@ func (r *MySQLEventRepository) FindByID(ctx context.Context, id string) (*model.
 // FindAll は全てのイベントを取得します
 func (r *MySQLEventRepository) FindAll(ctx context.Context) ([]*model.Event, error) {
 	query := `
-		SELECT e.event_id, e.title, e.description, e.status, e.venue, e.editable_roles, e.created_at, e.updated_at,
+		SELECT e.event_id, e.title, e.description, e.status, e.venue, e.editable_roles, e.confirmed_date, e.schedule_deadline, e.created_at, e.updated_at,
 		       u.user_id, u.name, u.generation
 		FROM events e
 		JOIN users u ON e.organizer_id = u.user_id
@@ -186,6 +192,8 @@ func (r *MySQLEventRepository) FindAll(ctx context.Context) ([]*model.Event, err
 			&statusStr,
 			&event.Venue,
 			&editableRolesJSON,
+			&event.ConfirmedDate,
+			&event.ScheduleDeadline,
 			&event.CreatedAt,
 			&event.UpdatedAt,
 			&organizer.UserID,

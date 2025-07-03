@@ -17,5 +17,5 @@ type User struct {
 	UserID     string     // 外部サービスから連携されるID
 	Name       string     // 名前
 	Roles      []UserRole // 役割リスト
-	Generation string     // 世代（例: "2023", "2024"）
+	Generation int        // 世代（1-100の範囲）
 }

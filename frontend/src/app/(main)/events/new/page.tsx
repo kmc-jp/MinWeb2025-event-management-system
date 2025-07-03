@@ -6,10 +6,18 @@ import Link from 'next/link';
 import { getApiClient, handleApiError } from '../../../../lib/api';
 import { CreateEventRequest, FeeSetting, Money } from '../../../../generated/api';
 
+// 日程設定を含む拡張されたCreateEventRequest型
+interface ExtendedCreateEventRequest extends Omit<CreateEventRequest, 'allowed_users'> {
+  allowed_users?: string[];
+  schedule_type?: 'confirmed' | 'polling';
+  confirmed_date?: string;
+  schedule_deadline?: string;
+}
+
 export default function CreateEventPage() {
   const router = useRouter();
   
-  const [formData, setFormData] = useState<CreateEventRequest>({
+  const [formData, setFormData] = useState<ExtendedCreateEventRequest>({
     title: '',
     description: '',
     venue: '',
@@ -19,8 +27,11 @@ export default function CreateEventPage() {
     tags: [],
     fee_settings: [],
     poll_type: 'date_select',
-    poll_candidates: []
-  } as CreateEventRequest);
+    poll_candidates: [],
+    schedule_type: 'confirmed', // 日程確定 or 日程調整
+    confirmed_date: '', // 確定した日程
+    schedule_deadline: '' // 日程確定予定日
+  });
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,22 +52,18 @@ export default function CreateEventPage() {
     }
   };
 
-
-
   const userRoles: string[] = ['member', 'admin'];
   const userRoleLabels: { [key: string]: string } = {
     'member': '部員',
     'admin': '管理者',
   };
 
-  const handleInputChange = (field: keyof CreateEventRequest, value: any) => {
+  const handleInputChange = (field: keyof ExtendedCreateEventRequest, value: any) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   };
-
-
 
   const addTag = () => {
     if (newTag.trim() && !formData.tags?.includes(newTag.trim())) {
@@ -115,7 +122,7 @@ export default function CreateEventPage() {
 
   const addFeeSetting = () => {
     const newFeeSetting: FeeSetting = {
-      applicable_generation: 2024,
+      applicable_generation: 1,
       fee: {
         amount: 0,
         currency: 'JPY'
@@ -150,7 +157,17 @@ export default function CreateEventPage() {
 
     try {
       const apiClient = getApiClient();
-      const response = await apiClient.createEvent(formData);
+      
+      // 日程情報を適切に処理
+      const eventData = {
+        ...formData,
+        // 日程確定の場合は確定した日程を設定
+        confirmed_date: formData.schedule_type === 'confirmed' ? formData.confirmed_date : undefined,
+        // 日程調整の場合は日程確定予定日を設定
+        schedule_deadline: formData.schedule_type === 'polling' ? formData.schedule_deadline : undefined,
+      };
+      
+      const response = await apiClient.createEvent(eventData);
       
       // 作成成功後、イベント詳細ページにリダイレクト
       router.push(`/events/${response.data.event_id}`);
@@ -370,6 +387,80 @@ export default function CreateEventPage() {
               </div>
             </div>
 
+            {/* 日程設定 */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">日程設定</h2>
+              <div className="space-y-4">
+                {/* 日程タイプ選択 */}
+                <div>
+                  <label className="block text-sm font-medium text-kmc-gray-700 mb-2">
+                    日程の設定方法 *
+                  </label>
+                  <div className="space-y-3">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="schedule_type"
+                        value="confirmed"
+                        checked={formData.schedule_type === 'confirmed'}
+                        onChange={(e) => handleInputChange('schedule_type', e.target.value)}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-kmc-gray-700">日程を確定する</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="schedule_type"
+                        value="polling"
+                        checked={formData.schedule_type === 'polling'}
+                        onChange={(e) => handleInputChange('schedule_type', e.target.value)}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-kmc-gray-700">日程調整を行う</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* 確定した日程 */}
+                {formData.schedule_type === 'confirmed' && (
+                  <div>
+                    <label htmlFor="confirmed_date" className="block text-sm font-medium text-kmc-gray-700 mb-2">
+                      確定した日程 *
+                    </label>
+                    <input
+                      type="datetime-local"
+                      id="confirmed_date"
+                      value={formData.confirmed_date}
+                      onChange={(e) => handleInputChange('confirmed_date', e.target.value)}
+                      className="input-field w-full"
+                      required
+                    />
+                  </div>
+                )}
+
+                {/* 日程確定予定日 */}
+                {formData.schedule_type === 'polling' && (
+                  <div>
+                    <label htmlFor="schedule_deadline" className="block text-sm font-medium text-kmc-gray-700 mb-2">
+                      日程確定予定日 *
+                    </label>
+                    <input
+                      type="date"
+                      id="schedule_deadline"
+                      value={formData.schedule_deadline}
+                      onChange={(e) => handleInputChange('schedule_deadline', e.target.value)}
+                      className="input-field w-full"
+                      required
+                    />
+                    <p className="text-xs text-kmc-gray-500 mt-1">
+                      この日までに日程を確定する予定です。カレンダーにはこの日付で表示されます。
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* タグ */}
             <div className="mb-8">
               <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">タグ</h2>
@@ -460,66 +551,68 @@ export default function CreateEventPage() {
               </div>
             </div>
 
-            {/* 日程調整 */}
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">日程調整</h2>
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="poll_type" className="block text-sm font-medium text-kmc-gray-700 mb-2">
-                    調整タイプ
-                  </label>
-                  <select
-                    id="poll_type"
-                    value={formData.poll_type}
-                    onChange={(e) => handleInputChange('poll_type', e.target.value)}
-                    className="input-field w-full"
-                  >
-                    <option value="date_select">日付選択</option>
-                    <option value="time_select">時間選択</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-kmc-gray-700 mb-2">
-                    候補日時
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="datetime-local"
-                      value={newPollCandidate}
-                      onChange={(e) => setNewPollCandidate(e.target.value)}
-                      className="input-field flex-1"
-                    />
-                    <button
-                      type="button"
-                      onClick={addPollCandidate}
-                      className="btn-secondary"
+            {/* 日程調整 - 日程調整を行う場合のみ表示 */}
+            {formData.schedule_type === 'polling' && (
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">日程調整</h2>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="poll_type" className="block text-sm font-medium text-kmc-gray-700 mb-2">
+                      調整タイプ
+                    </label>
+                    <select
+                      id="poll_type"
+                      value={formData.poll_type}
+                      onChange={(e) => handleInputChange('poll_type', e.target.value)}
+                      className="input-field w-full"
                     >
-                      追加
-                    </button>
+                      <option value="date_select">日付選択</option>
+                      <option value="time_select">時間選択</option>
+                    </select>
                   </div>
-                  {formData.poll_candidates && formData.poll_candidates.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      {formData.poll_candidates.map((candidate) => (
-                        <div
-                          key={candidate}
-                          className="flex items-center justify-between p-2 bg-kmc-gray-50 rounded"
-                        >
-                          <span className="text-sm">{new Date(candidate).toLocaleString('ja-JP')}</span>
-                          <button
-                            type="button"
-                            onClick={() => removePollCandidate(candidate)}
-                            className="text-kmc-500 hover:text-kmc-700"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
+
+                  <div>
+                    <label className="block text-sm font-medium text-kmc-gray-700 mb-2">
+                      候補日時
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="datetime-local"
+                        value={newPollCandidate}
+                        onChange={(e) => setNewPollCandidate(e.target.value)}
+                        className="input-field flex-1"
+                      />
+                      <button
+                        type="button"
+                        onClick={addPollCandidate}
+                        className="btn-secondary"
+                      >
+                        追加
+                      </button>
                     </div>
-                  )}
+                    {formData.poll_candidates && formData.poll_candidates.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {formData.poll_candidates.map((candidate) => (
+                          <div
+                            key={candidate}
+                            className="flex items-center justify-between p-2 bg-kmc-gray-50 rounded"
+                          >
+                            <span className="text-sm">{new Date(candidate).toLocaleString('ja-JP')}</span>
+                            <button
+                              type="button"
+                              onClick={() => removePollCandidate(candidate)}
+                              className="text-kmc-500 hover:text-kmc-700"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* 料金設定 */}
             <div className="mb-8">
@@ -548,7 +641,9 @@ export default function CreateEventPage() {
                             value={feeSetting.applicable_generation}
                             onChange={(e) => updateFeeSetting(index, 'applicable_generation', Number(e.target.value))}
                             className="input-field w-full"
-                            placeholder="例: 2024"
+                            min="1"
+                            max="100"
+                            placeholder="1-100の範囲"
                           />
                         </div>
                         

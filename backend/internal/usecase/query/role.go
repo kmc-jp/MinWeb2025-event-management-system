@@ -26,7 +26,7 @@ type RoleDetailsDTO struct {
 type UserSummaryDTO struct {
 	UserID     string `json:"user_id"`
 	Name       string `json:"name"`
-	Generation string `json:"generation"`
+	Generation int    `json:"generation"`
 }
 
 // RoleQueryUsecase は役割クエリのユースケース

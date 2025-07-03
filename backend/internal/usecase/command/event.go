@@ -10,17 +10,19 @@ import (
 // CreateEventCommand はイベント作成のコマンドを表します
 // CQRSパターンに従い、書き込み操作をコマンドとして定義します
 type CreateEventCommand struct {
-	OrganizerID    string
-	Title          string
-	Description    string
-	Venue          string
-	AllowedRoles   []model.UserRole
-	EditableRoles  []model.UserRole
-	AllowedUsers   []string
-	Tags           []model.Tag
-	FeeSettings    []model.FeeSetting
-	PollType       string
-	PollCandidates []time.Time
+	OrganizerID      string
+	Title            string
+	Description      string
+	Venue            string
+	AllowedRoles     []model.UserRole
+	EditableRoles    []model.UserRole
+	AllowedUsers     []string
+	Tags             []model.Tag
+	FeeSettings      []model.FeeSetting
+	PollType         string
+	PollCandidates   []time.Time
+	ConfirmedDate    *time.Time
+	ScheduleDeadline *time.Time
 }
 
 // UpdateEventCommand はイベント更新のコマンドを表します
@@ -58,7 +60,7 @@ func (uc *EventCommandUsecase) CreateEvent(ctx context.Context, cmd *CreateEvent
 	if err != nil {
 		return "", err
 	}
-	event := model.NewEvent(organizer, cmd.Title, cmd.Description, cmd.Venue, cmd.AllowedRoles, cmd.EditableRoles, cmd.AllowedUsers, cmd.Tags, cmd.FeeSettings, cmd.PollType, cmd.PollCandidates)
+	event := model.NewEvent(organizer, cmd.Title, cmd.Description, cmd.Venue, cmd.AllowedRoles, cmd.EditableRoles, cmd.AllowedUsers, cmd.Tags, cmd.FeeSettings, cmd.PollType, cmd.PollCandidates, cmd.ConfirmedDate, cmd.ScheduleDeadline)
 	if err := uc.EventRepo.Save(ctx, event); err != nil {
 		return "", err
 	}
