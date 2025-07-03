@@ -1,1 +1,0 @@
-ALTER TABLE events ADD COLUMN editable_roles JSON NOT NULL DEFAULT (JSON_ARRAY()); 

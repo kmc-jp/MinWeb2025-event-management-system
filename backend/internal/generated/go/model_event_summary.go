@@ -31,6 +31,12 @@ type EventSummary struct {
 	// 主催者名
 	OrganizerName string `json:"organizer_name"`
 
+	// 確定した日程
+	ConfirmedDate time.Time `json:"confirmed_date,omitempty"`
+
+	// 日程確定予定日
+	ScheduleDeadline time.Time `json:"schedule_deadline,omitempty"`
+
 	// 作成日時
 	CreatedAt time.Time `json:"created_at"`
 }

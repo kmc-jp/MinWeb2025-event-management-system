@@ -113,6 +113,131 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/events/{id}/participants:
+    get:
+      summary: イベント参加者一覧を取得
+      operationId: listEventParticipants
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EventParticipant"
+        "404":
+          description: イベントが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    post:
+      summary: イベントに参加
+      operationId: joinEvent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinEventRequest"
+      responses:
+        "201":
+          description: 参加成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventParticipant"
+        "400":
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: 認証エラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: イベントが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 既に参加済み
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/events/{id}/participants/{userId}:
+    delete:
+      summary: イベントから退出
+      operationId: leaveEvent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: 退出成功
+        "401":
+          description: 認証エラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: イベントまたは参加者が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /api/events/{id}:
     get:
       summary: イベント詳細を取得
@@ -1072,6 +1197,46 @@ components:
           description: タグ名
           maxLength: 50
       required:
+        - name
+
+    # イベント参加関連
+    EventParticipant:
+      type: object
+      properties:
+        user_id:
+          type: string
+          description: ユーザーID
+        name:
+          type: string
+          description: ユーザー名
+        generation:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: 世代（1-100の範囲）
+        joined_at:
+          type: string
+          format: date-time
+          description: 参加日時
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, CANCELLED]
+          description: 参加ステータス
+      required:
+        - user_id
+        - name
+        - generation
+        - joined_at
+        - status
+
+    JoinEventRequest:
+      type: object
+      properties:
+        user_id:
+          type: string
+          description: 参加するユーザーID
+      required:
+        - user_id
         - name
 
     # 料金設定

@@ -51,6 +51,11 @@ type UpdateEventRequest struct {
 	FeeSettings   []model.FeeSetting `json:"fee_settings"`
 }
 
+// JoinEventRequest はイベント参加リクエスト
+type JoinEventRequest struct {
+	UserID string `json:"user_id" binding:"required"`
+}
+
 // CreateEvent はイベント作成エンドポイント
 func (h *EventHandler) CreateEvent(c *gin.Context) {
 	var req CreateEventRequest
@@ -290,6 +295,99 @@ func (h *EventHandler) GetEventDetails(c *gin.Context) {
 	c.JSON(http.StatusOK, event)
 }
 
+// ListEventParticipants はイベント参加者一覧取得エンドポイント
+func (h *EventHandler) ListEventParticipants(c *gin.Context) {
+	eventID := c.Param("id")
+	if eventID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "event_id is required"})
+		return
+	}
+
+	participants, err := h.eventQueryUsecase.GetEventParticipants(c.Request.Context(), eventID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, participants)
+}
+
+// JoinEvent はイベント参加エンドポイント
+func (h *EventHandler) JoinEvent(c *gin.Context) {
+	eventID := c.Param("id")
+	if eventID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "event_id is required"})
+		return
+	}
+
+	var req JoinEventRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	cmd := &command.JoinEventCommand{
+		EventID: eventID,
+		UserID:  req.UserID,
+	}
+
+	if err := h.eventCommandUsecase.JoinEvent(c.Request.Context(), cmd); err != nil {
+		if err.Error() == "user already joined the event" {
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			return
+		}
+		if err.Error() == "user does not have required roles to join this event" {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 参加後の参加者情報を返す
+	participants, err := h.eventQueryUsecase.GetEventParticipants(c.Request.Context(), eventID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 新しく参加したユーザーを探す
+	for _, participant := range participants {
+		if participant.UserID == req.UserID {
+			c.JSON(http.StatusCreated, participant)
+			return
+		}
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"message": "Successfully joined the event"})
+}
+
+// LeaveEvent はイベント退出エンドポイント
+func (h *EventHandler) LeaveEvent(c *gin.Context) {
+	eventID := c.Param("id")
+	userID := c.Param("userId")
+	if eventID == "" || userID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "event_id and userId are required"})
+		return
+	}
+
+	cmd := &command.LeaveEventCommand{
+		EventID: eventID,
+		UserID:  userID,
+	}
+
+	if err := h.eventCommandUsecase.LeaveEvent(c.Request.Context(), cmd); err != nil {
+		if err.Error() == "user not found in participants" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
 // RegisterRoutes はイベント関連のルートを登録
 func (h *EventHandler) RegisterRoutes(r *gin.Engine) {
 	events := r.Group("/api/events")
@@ -299,5 +397,10 @@ func (h *EventHandler) RegisterRoutes(r *gin.Engine) {
 		events.GET("/:id", h.GetEventDetails)
 		events.PUT("/:id", h.UpdateEvent)
 		events.DELETE("/:id", h.DeleteEvent)
+
+		// イベント参加機能のルート
+		events.GET("/:id/participants", h.ListEventParticipants)
+		events.POST("/:id/participants", h.JoinEvent)
+		events.DELETE("/:id/participants/:userId", h.LeaveEvent)
 	}
 }

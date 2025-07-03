@@ -22,6 +22,15 @@ class MockApiClient {
       const mockUserData = localStorage.getItem('mockUser');
       if (mockUserData) {
         this.mockUser = JSON.parse(mockUserData);
+      } else {
+        // デフォルトのモックユーザーを設定
+        this.mockUser = {
+          user_id: 'dummy-user-001',
+          name: 'テストユーザー',
+          roles: ['member'], // デフォルトでmember役割
+          generation: 1
+        };
+        localStorage.setItem('mockUser', JSON.stringify(this.mockUser));
       }
     }
   }
@@ -267,7 +276,7 @@ class MockApiClient {
       title: 'Mock Event',
       description: 'This is a mock event for development',
       venue: 'Mock Venue',
-      allowed_roles: ['Member'],
+      allowed_roles: ['member'], // member役割のユーザーのみ参加可能
       editable_roles: ['admin'],
       tags: ['mock', 'development'],
       fee_settings: [],
@@ -396,6 +405,51 @@ class MockApiClient {
         status: 'ok'
       }
     };
+  }
+
+  // イベント参加者一覧を取得（Mock）
+  async listEventParticipants(id: string) {
+    const mockParticipants = [
+      {
+        user_id: 'user1',
+        name: '田中太郎',
+        generation: 1,
+        joined_at: '2024-02-01T10:00:00Z',
+        status: 'CONFIRMED'
+      },
+      {
+        user_id: 'user2',
+        name: '佐藤花子',
+        generation: 2,
+        joined_at: '2024-02-02T11:00:00Z',
+        status: 'PENDING'
+      }
+    ];
+
+    return {
+      data: mockParticipants
+    };
+  }
+
+  // イベントに参加（Mock）
+  async joinEvent(id: string, joinEventRequest: { user_id: string }) {
+    const mockParticipant = {
+      user_id: joinEventRequest.user_id,
+      name: '参加者',
+      generation: 1,
+      joined_at: new Date().toISOString(),
+      status: 'PENDING'
+    };
+
+    return {
+      data: mockParticipant
+    };
+  }
+
+  // イベントから退出（Mock）
+  async leaveEvent(id: string, userId: string) {
+    // Mock実装では何もしない
+    return { data: undefined };
   }
 }
 

@@ -10,7 +10,11 @@
 
 package generated
 
-type UserSummary struct {
+import (
+	"time"
+)
+
+type EventParticipant struct {
 
 	// ユーザーID
 	UserId string `json:"user_id"`
@@ -20,4 +24,10 @@ type UserSummary struct {
 
 	// 世代（1-100の範囲）
 	Generation int32 `json:"generation"`
+
+	// 参加日時
+	JoinedAt time.Time `json:"joined_at"`
+
+	// 参加ステータス
+	Status string `json:"status"`
 }

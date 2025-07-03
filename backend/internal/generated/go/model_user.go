@@ -21,6 +21,6 @@ type User struct {
 	// ユーザーの役割リスト
 	Roles []string `json:"roles"`
 
-	// 世代（例 \"2023\", \"2024\"）
-	Generation string `json:"generation"`
+	// 世代（1-100の範囲）
+	Generation int32 `json:"generation"`
 }

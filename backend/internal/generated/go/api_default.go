@@ -71,6 +71,21 @@ func HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
+// JoinEvent - イベントに参加
+func JoinEvent(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{})
+}
+
+// LeaveEvent - イベントから退出
+func LeaveEvent(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{})
+}
+
+// ListEventParticipants - イベント参加者一覧を取得
+func ListEventParticipants(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{})
+}
+
 // ListEvents - イベント一覧を取得
 func ListEvents(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})

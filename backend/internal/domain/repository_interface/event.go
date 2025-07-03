@@ -23,4 +23,14 @@ type EventRepository interface {
 
 	// Delete は指定されたIDのイベントを削除します
 	Delete(ctx context.Context, id string) error
+
+	// イベント参加機能
+	// GetEventParticipants は指定されたイベントの参加者一覧を取得します
+	GetEventParticipants(ctx context.Context, eventID string) ([]model.EventParticipant, error)
+
+	// AddEventParticipant はイベントに参加者を追加します
+	AddEventParticipant(ctx context.Context, eventID string, participant model.EventParticipant) error
+
+	// RemoveEventParticipant はイベントから参加者を削除します
+	RemoveEventParticipant(ctx context.Context, eventID string, userID string) error
 }

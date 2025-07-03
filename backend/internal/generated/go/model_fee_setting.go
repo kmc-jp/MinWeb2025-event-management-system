@@ -12,7 +12,7 @@ package generated
 
 type FeeSetting struct {
 
-	// 適用世代（例: 2023, 2024）
+	// 適用世代（1-100の範囲）
 	ApplicableGeneration int32 `json:"applicable_generation"`
 
 	Fee Money `json:"fee"`

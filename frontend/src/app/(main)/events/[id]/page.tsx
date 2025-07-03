@@ -4,18 +4,24 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getApiClient, handleApiError } from '../../../../lib/api';
-import { EventDetails, EventDetailsStatusEnum } from '../../../../generated';
+import { EventDetails, EventDetailsStatusEnum, EventParticipant, JoinEventRequest } from '../../../../generated';
 
 export default function EventDetailPage() {
   const params = useParams();
   const eventId = params.id as string;
   
   const [event, setEvent] = useState<EventDetails | null>(null);
+  const [participants, setParticipants] = useState<EventParticipant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [joining, setJoining] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUserId] = useState('dummy-user-001'); // 開発用：実際の認証システムから取得
 
   useEffect(() => {
     fetchEventDetails();
+    fetchParticipants();
+    fetchCurrentUser();
   }, [eventId]);
 
   const fetchEventDetails = async () => {
@@ -32,6 +38,68 @@ export default function EventDetailPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchParticipants = async () => {
+    try {
+      const apiClient = getApiClient();
+      const response = await apiClient.listEventParticipants(eventId);
+      setParticipants(response.data as EventParticipant[]);
+    } catch (error) {
+      console.error('参加者取得エラー:', error);
+    }
+  };
+
+  const handleJoinEvent = async () => {
+    try {
+      setJoining(true);
+      const apiClient = getApiClient();
+      const request: JoinEventRequest = {
+        user_id: currentUserId
+      };
+      await apiClient.joinEvent(eventId, request);
+      await fetchParticipants(); // 参加者一覧を再取得
+    } catch (error) {
+      setError(handleApiError(error));
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  const handleLeaveEvent = async () => {
+    try {
+      const apiClient = getApiClient();
+      await apiClient.leaveEvent(eventId, currentUserId);
+      await fetchParticipants(); // 参加者一覧を再取得
+    } catch (error) {
+      setError(handleApiError(error));
+    }
+  };
+
+  const fetchCurrentUser = async () => {
+    try {
+      const apiClient = getApiClient();
+      const response = await apiClient.getCurrentUser();
+      setCurrentUser(response.data);
+    } catch (error) {
+      console.error('ユーザー情報取得エラー:', error);
+    }
+  };
+
+  const isParticipant = () => {
+    return participants.some(p => p.user_id === currentUserId);
+  };
+
+  const canJoinEvent = () => {
+    if (!event || !currentUser) return false;
+    
+    // 参加可能な役割を持っているかチェック
+    const userRoles = currentUser.roles || [];
+    const allowedRoles = event.allowed_roles || [];
+    
+    return userRoles.some((userRole: string) => 
+      allowedRoles.includes(userRole)
+    );
   };
 
   const getStatusColor = (status: EventDetailsStatusEnum) => {
@@ -156,7 +224,7 @@ export default function EventDetailPage() {
               </span>
             </div>
             
-            {/* 編集ボタン */}
+            {/* 編集ボタンと参加ボタン */}
             <div className="flex space-x-2">
               <Link
                 href={`/events/${eventId}/edit`}
@@ -164,6 +232,32 @@ export default function EventDetailPage() {
               >
                 編集
               </Link>
+              
+              {/* 参加/退出ボタン */}
+              {isParticipant() ? (
+                <button
+                  onClick={handleLeaveEvent}
+                  className="btn-secondary"
+                >
+                  退出
+                </button>
+              ) : canJoinEvent() ? (
+                <button
+                  onClick={handleJoinEvent}
+                  disabled={joining}
+                  className="btn-primary"
+                >
+                  {joining ? '参加中...' : '参加する'}
+                </button>
+              ) : (
+                <button
+                  disabled
+                  className="btn-disabled"
+                  title="参加可能な役割を持っていません"
+                >
+                  参加不可
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -197,12 +291,24 @@ export default function EventDetailPage() {
                     {event.allowed_roles.map((role) => (
                       <span
                         key={role}
-                        className="px-2 py-1 bg-kmc-100 text-kmc-700 rounded-full text-xs font-medium"
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          currentUser && currentUser.roles && currentUser.roles.includes(role)
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-kmc-100 text-kmc-700'
+                        }`}
                       >
                         {role}
+                        {currentUser && currentUser.roles && currentUser.roles.includes(role) && (
+                          <span className="ml-1">✓</span>
+                        )}
                       </span>
                     ))}
                   </div>
+                  {currentUser && !canJoinEvent() && (
+                    <p className="text-sm text-red-600 mt-2">
+                      あなたは参加可能な役割を持っていません
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -280,6 +386,40 @@ export default function EventDetailPage() {
                   <p className="font-medium text-kmc-gray-900">{formatDate(event.updated_at)}</p>
                 </div>
               </div>
+            </div>
+
+            {/* 参加者一覧 */}
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-kmc-gray-900 mb-4">参加者一覧</h3>
+              {participants.length > 0 ? (
+                <div className="space-y-3">
+                  {participants.map((participant) => (
+                    <div key={participant.user_id} className="flex items-center justify-between p-3 bg-kmc-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-kmc-gray-900">{participant.name}</p>
+                        <p className="text-sm text-kmc-gray-600">{participant.generation}期</p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          participant.status === 'CONFIRMED' 
+                            ? 'bg-green-100 text-green-700'
+                            : participant.status === 'PENDING'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-red-100 text-red-700'
+                        }`}>
+                          {participant.status === 'CONFIRMED' ? '確定' : 
+                           participant.status === 'PENDING' ? '保留' : 'キャンセル'}
+                        </span>
+                        <span className="text-xs text-kmc-gray-500">
+                          {formatDate(participant.joined_at)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-kmc-gray-500 text-center py-4">まだ参加者がいません</p>
+              )}
             </div>
           </div>
         </div>

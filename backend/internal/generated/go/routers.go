@@ -143,6 +143,27 @@ var routes = Routes{
 	},
 
 	{
+		"JoinEvent",
+		http.MethodPost,
+		"/api/events/:id/participants",
+		JoinEvent,
+	},
+
+	{
+		"LeaveEvent",
+		http.MethodDelete,
+		"/api/events/:id/participants/:userId",
+		LeaveEvent,
+	},
+
+	{
+		"ListEventParticipants",
+		http.MethodGet,
+		"/api/events/:id/participants",
+		ListEventParticipants,
+	},
+
+	{
 		"ListEvents",
 		http.MethodGet,
 		"/api/events",

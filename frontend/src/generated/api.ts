@@ -259,6 +259,52 @@ export type EventDetailsStatusEnum = typeof EventDetailsStatusEnum[keyof typeof 
 /**
  * 
  * @export
+ * @interface EventParticipant
+ */
+export interface EventParticipant {
+    /**
+     * ユーザーID
+     * @type {string}
+     * @memberof EventParticipant
+     */
+    'user_id': string;
+    /**
+     * ユーザー名
+     * @type {string}
+     * @memberof EventParticipant
+     */
+    'name': string;
+    /**
+     * 世代（1-100の範囲）
+     * @type {number}
+     * @memberof EventParticipant
+     */
+    'generation': number;
+    /**
+     * 参加日時
+     * @type {string}
+     * @memberof EventParticipant
+     */
+    'joined_at': string;
+    /**
+     * 参加ステータス
+     * @type {string}
+     * @memberof EventParticipant
+     */
+    'status': EventParticipantStatusEnum;
+}
+
+export const EventParticipantStatusEnum = {
+    Pending: 'PENDING',
+    Confirmed: 'CONFIRMED',
+    Cancelled: 'CANCELLED'
+} as const;
+
+export type EventParticipantStatusEnum = typeof EventParticipantStatusEnum[keyof typeof EventParticipantStatusEnum];
+
+/**
+ * 
+ * @export
  * @interface EventSummary
  */
 export interface EventSummary {
@@ -362,6 +408,19 @@ export const HealthCheckStatusEnum = {
 
 export type HealthCheckStatusEnum = typeof HealthCheckStatusEnum[keyof typeof HealthCheckStatusEnum];
 
+/**
+ * 
+ * @export
+ * @interface JoinEventRequest
+ */
+export interface JoinEventRequest {
+    /**
+     * 参加するユーザーID
+     * @type {string}
+     * @memberof JoinEventRequest
+     */
+    'user_id': string;
+}
 /**
  * 
  * @export
@@ -1023,6 +1082,118 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
         },
         /**
          * 
+         * @summary イベントに参加
+         * @param {string} id 
+         * @param {JoinEventRequest} joinEventRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        joinEvent: async (id: string, joinEventRequest: JoinEventRequest, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('joinEvent', 'id', id)
+            // verify required parameter 'joinEventRequest' is not null or undefined
+            assertParamExists('joinEvent', 'joinEventRequest', joinEventRequest)
+            const localVarPath = `/api/events/{id}/participants`
+                .replace(`{${"id"}}`, encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(joinEventRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary イベントから退出
+         * @param {string} id 
+         * @param {string} userId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        leaveEvent: async (id: string, userId: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('leaveEvent', 'id', id)
+            // verify required parameter 'userId' is not null or undefined
+            assertParamExists('leaveEvent', 'userId', userId)
+            const localVarPath = `/api/events/{id}/participants/{userId}`
+                .replace(`{${"id"}}`, encodeURIComponent(String(id)))
+                .replace(`{${"userId"}}`, encodeURIComponent(String(userId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'DELETE', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary イベント参加者一覧を取得
+         * @param {string} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        listEventParticipants: async (id: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('listEventParticipants', 'id', id)
+            const localVarPath = `/api/events/{id}/participants`
+                .replace(`{${"id"}}`, encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
          * @summary イベント一覧を取得
          * @param {number} [page] ページ番号
          * @param {number} [pageSize] 1ページあたりの件数
@@ -1424,6 +1595,41 @@ export const DefaultApiFp = function(configuration?: Configuration) {
         },
         /**
          * 
+         * @summary イベントに参加
+         * @param {string} id 
+         * @param {JoinEventRequest} joinEventRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async joinEvent(id: string, joinEventRequest: JoinEventRequest, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<EventParticipant>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.joinEvent(id, joinEventRequest, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary イベントから退出
+         * @param {string} id 
+         * @param {string} userId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async leaveEvent(id: string, userId: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.leaveEvent(id, userId, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary イベント参加者一覧を取得
+         * @param {string} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async listEventParticipants(id: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<EventParticipant>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.listEventParticipants(id, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
          * @summary イベント一覧を取得
          * @param {number} [page] ページ番号
          * @param {number} [pageSize] 1ページあたりの件数
@@ -1625,6 +1831,38 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
         },
         /**
          * 
+         * @summary イベントに参加
+         * @param {string} id 
+         * @param {JoinEventRequest} joinEventRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        joinEvent(id: string, joinEventRequest: JoinEventRequest, options?: any): AxiosPromise<EventParticipant> {
+            return localVarFp.joinEvent(id, joinEventRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary イベントから退出
+         * @param {string} id 
+         * @param {string} userId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        leaveEvent(id: string, userId: string, options?: any): AxiosPromise<void> {
+            return localVarFp.leaveEvent(id, userId, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary イベント参加者一覧を取得
+         * @param {string} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        listEventParticipants(id: string, options?: any): AxiosPromise<Array<EventParticipant>> {
+            return localVarFp.listEventParticipants(id, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
          * @summary イベント一覧を取得
          * @param {number} [page] ページ番号
          * @param {number} [pageSize] 1ページあたりの件数
@@ -1815,6 +2053,38 @@ export interface DefaultApiInterface {
      * @memberof DefaultApiInterface
      */
     healthCheck(options?: AxiosRequestConfig): AxiosPromise<HealthCheck>;
+
+    /**
+     * 
+     * @summary イベントに参加
+     * @param {string} id 
+     * @param {JoinEventRequest} joinEventRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApiInterface
+     */
+    joinEvent(id: string, joinEventRequest: JoinEventRequest, options?: AxiosRequestConfig): AxiosPromise<EventParticipant>;
+
+    /**
+     * 
+     * @summary イベントから退出
+     * @param {string} id 
+     * @param {string} userId 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApiInterface
+     */
+    leaveEvent(id: string, userId: string, options?: AxiosRequestConfig): AxiosPromise<void>;
+
+    /**
+     * 
+     * @summary イベント参加者一覧を取得
+     * @param {string} id 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApiInterface
+     */
+    listEventParticipants(id: string, options?: AxiosRequestConfig): AxiosPromise<Array<EventParticipant>>;
 
     /**
      * 
@@ -2029,6 +2299,44 @@ export class DefaultApi extends BaseAPI implements DefaultApiInterface {
      */
     public healthCheck(options?: AxiosRequestConfig) {
         return DefaultApiFp(this.configuration).healthCheck(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary イベントに参加
+     * @param {string} id 
+     * @param {JoinEventRequest} joinEventRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApi
+     */
+    public joinEvent(id: string, joinEventRequest: JoinEventRequest, options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).joinEvent(id, joinEventRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary イベントから退出
+     * @param {string} id 
+     * @param {string} userId 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApi
+     */
+    public leaveEvent(id: string, userId: string, options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).leaveEvent(id, userId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary イベント参加者一覧を取得
+     * @param {string} id 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApi
+     */
+    public listEventParticipants(id: string, options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).listEventParticipants(id, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

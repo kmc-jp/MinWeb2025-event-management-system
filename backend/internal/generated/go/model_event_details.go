@@ -43,6 +43,12 @@ type EventDetails struct {
 	// 料金設定
 	FeeSettings []FeeSetting `json:"fee_settings,omitempty"`
 
+	// 確定した日程
+	ConfirmedDate time.Time `json:"confirmed_date,omitempty"`
+
+	// 日程確定予定日
+	ScheduleDeadline time.Time `json:"schedule_deadline,omitempty"`
+
 	// 主催者名
 	OrganizerName string `json:"organizer_name"`
 

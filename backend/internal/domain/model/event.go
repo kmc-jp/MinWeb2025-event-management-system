@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -62,6 +63,24 @@ type EventReport struct {
 
 type Tag string
 
+// ParticipationStatus: 参加ステータス
+type ParticipationStatus string
+
+const (
+	ParticipationStatusPending   ParticipationStatus = "PENDING"
+	ParticipationStatusConfirmed ParticipationStatus = "CONFIRMED"
+	ParticipationStatusCancelled ParticipationStatus = "CANCELLED"
+)
+
+// EventParticipant: イベント参加者
+type EventParticipant struct {
+	UserID     string
+	Name       string
+	Generation int
+	JoinedAt   time.Time
+	Status     ParticipationStatus
+}
+
 // TagEntity はタグ管理用のエンティティです
 type TagEntity struct {
 	Name      string
@@ -95,8 +114,9 @@ type Event struct {
 	FeeSettings      []FeeSetting
 	Comments         []Comment
 	EventReports     []EventReport
-	ConfirmedDate    *time.Time // 確定した日程
-	ScheduleDeadline *time.Time // 日程確定予定日
+	Participants     []EventParticipant // イベント参加者
+	ConfirmedDate    *time.Time         // 確定した日程
+	ScheduleDeadline *time.Time         // 日程確定予定日
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
@@ -124,6 +144,7 @@ func NewEvent(organizer *User, title, description, venue string, allowedRoles, e
 		FeeSettings:      feeSettings,
 		Comments:         []Comment{},
 		EventReports:     []EventReport{},
+		Participants:     []EventParticipant{},
 		ConfirmedDate:    confirmedDate,
 		ScheduleDeadline: scheduleDeadline,
 		CreatedAt:        now,
@@ -196,4 +217,69 @@ func (e *Event) GetApplicableFee(user *User) *Money {
 		}
 	}
 	return nil
+}
+
+// イベント参加機能のメソッド
+func (e *Event) JoinEvent(user *User) error {
+	// 既に参加しているかチェック
+	for _, p := range e.Participants {
+		if p.UserID == user.UserID {
+			return fmt.Errorf("user already joined the event")
+		}
+	}
+
+	// 参加可能な役割かチェック
+	hasAllowedRole := false
+	for _, userRole := range user.Roles {
+		for _, allowedRole := range e.AllowedRoles {
+			if userRole == allowedRole {
+				hasAllowedRole = true
+				break
+			}
+		}
+		if hasAllowedRole {
+			break
+		}
+	}
+
+	if !hasAllowedRole {
+		return fmt.Errorf("user does not have required roles to join this event")
+	}
+
+	// 参加者を追加
+	participant := EventParticipant{
+		UserID:     user.UserID,
+		Name:       user.Name,
+		Generation: user.Generation,
+		JoinedAt:   time.Now(),
+		Status:     ParticipationStatusPending,
+	}
+	e.Participants = append(e.Participants, participant)
+	e.UpdatedAt = time.Now()
+	return nil
+}
+
+func (e *Event) LeaveEvent(userID string) error {
+	for i, p := range e.Participants {
+		if p.UserID == userID {
+			// 参加者を削除
+			e.Participants = append(e.Participants[:i], e.Participants[i+1:]...)
+			e.UpdatedAt = time.Now()
+			return nil
+		}
+	}
+	return fmt.Errorf("user not found in participants")
+}
+
+func (e *Event) GetParticipants() []EventParticipant {
+	return e.Participants
+}
+
+func (e *Event) IsParticipant(userID string) bool {
+	for _, p := range e.Participants {
+		if p.UserID == userID {
+			return true
+		}
+	}
+	return false
 }

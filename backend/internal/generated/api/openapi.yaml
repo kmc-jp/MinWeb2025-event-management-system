@@ -121,6 +121,136 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: サーバーエラー
       summary: 新しいイベントを作成
+  /api/events/{id}/participants:
+    get:
+      operationId: listEventParticipants
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/EventParticipant'
+                type: array
+          description: 成功
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: イベントが見つかりません
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: サーバーエラー
+      summary: イベント参加者一覧を取得
+    post:
+      operationId: joinEvent
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinEventRequest'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventParticipant'
+          description: 参加成功
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: バリデーションエラー
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: 認証エラー
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: イベントが見つかりません
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: 既に参加済み
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: サーバーエラー
+      summary: イベントに参加
+  /api/events/{id}/participants/{userId}:
+    delete:
+      operationId: leaveEvent
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: 退出成功
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: 認証エラー
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: イベントまたは参加者が見つかりません
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: サーバーエラー
+      summary: イベントから退出
   /api/events/{id}:
     delete:
       operationId: deleteEvent
@@ -694,8 +824,10 @@ components:
       example:
         venue: venue
         event_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        schedule_deadline: 2000-01-23T04:56:07.000+00:00
         created_at: 2000-01-23T04:56:07.000+00:00
         organizer_name: organizer_name
+        confirmed_date: 2000-01-23T04:56:07.000+00:00
         title: title
         status: DRAFT
       properties:
@@ -721,6 +853,14 @@ components:
         organizer_name:
           description: 主催者名
           type: string
+        confirmed_date:
+          description: 確定した日程
+          format: date-time
+          type: string
+        schedule_deadline:
+          description: 日程確定予定日
+          format: date-time
+          type: string
         created_at:
           description: 作成日時
           format: date-time
@@ -735,28 +875,30 @@ components:
     EventDetails:
       example:
         venue: venue
+        description: description
+        created_at: 2000-01-23T04:56:07.000+00:00
+        confirmed_date: 2000-01-23T04:56:07.000+00:00
+        title: title
+        tags:
+        - tags
+        - tags
         allowed_roles:
         - null
         - null
         event_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
         updated_at: 2000-01-23T04:56:07.000+00:00
-        description: description
-        created_at: 2000-01-23T04:56:07.000+00:00
+        schedule_deadline: 2000-01-23T04:56:07.000+00:00
         organizer_name: organizer_name
-        title: title
         editable_roles:
         - null
         - null
         status: DRAFT
-        tags:
-        - tags
-        - tags
         fee_settings:
-        - applicable_generation: 0
+        - applicable_generation: 8
           fee:
             amount: 0
             currency: JPY
-        - applicable_generation: 0
+        - applicable_generation: 8
           fee:
             amount: 0
             currency: JPY
@@ -803,6 +945,14 @@ components:
           items:
             $ref: '#/components/schemas/FeeSetting'
           type: array
+        confirmed_date:
+          description: 確定した日程
+          format: date-time
+          type: string
+        schedule_deadline:
+          description: 日程確定予定日
+          format: date-time
+          type: string
         organizer_name:
           description: 主催者名
           type: string
@@ -827,14 +977,18 @@ components:
         data:
         - venue: venue
           event_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          schedule_deadline: 2000-01-23T04:56:07.000+00:00
           created_at: 2000-01-23T04:56:07.000+00:00
           organizer_name: organizer_name
+          confirmed_date: 2000-01-23T04:56:07.000+00:00
           title: title
           status: DRAFT
         - venue: venue
           event_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          schedule_deadline: 2000-01-23T04:56:07.000+00:00
           created_at: 2000-01-23T04:56:07.000+00:00
           organizer_name: organizer_name
+          confirmed_date: 2000-01-23T04:56:07.000+00:00
           title: title
           status: DRAFT
         total_count: 0
@@ -870,7 +1024,9 @@ components:
         - null
         - null
         description: description
+        schedule_deadline: 2000-01-23T04:56:07.000+00:00
         poll_type: date_select
+        confirmed_date: 2000-01-23T04:56:07.000+00:00
         title: title
         editable_roles:
         - null
@@ -879,11 +1035,11 @@ components:
         - tags
         - tags
         fee_settings:
-        - applicable_generation: 0
+        - applicable_generation: 8
           fee:
             amount: 0
             currency: JPY
-        - applicable_generation: 0
+        - applicable_generation: 8
           fee:
             amount: 0
             currency: JPY
@@ -931,6 +1087,14 @@ components:
             format: date-time
             type: string
           type: array
+        confirmed_date:
+          description: 確定した日程
+          format: date-time
+          type: string
+        schedule_deadline:
+          description: 日程確定予定日
+          format: date-time
+          type: string
       required:
       - allowed_roles
       - title
@@ -961,11 +1125,11 @@ components:
         - tags
         - tags
         fee_settings:
-        - applicable_generation: 0
+        - applicable_generation: 8
           fee:
             amount: 0
             currency: JPY
-        - applicable_generation: 0
+        - applicable_generation: 8
           fee:
             amount: 0
             currency: JPY
@@ -1010,7 +1174,7 @@ components:
       type: object
     User:
       example:
-        generation: generation
+        generation: 8
         user_id: user_id
         roles:
         - null
@@ -1029,8 +1193,10 @@ components:
             $ref: '#/components/schemas/UserRole'
           type: array
         generation:
-          description: "世代（例 \"2023\", \"2024\"）"
-          type: string
+          description: 世代（1-100の範囲）
+          maximum: 100
+          minimum: 1
+          type: integer
       required:
       - generation
       - name
@@ -1112,10 +1278,10 @@ components:
         created_at: 2000-01-23T04:56:07.000+00:00
         created_by: created_by
         users:
-        - generation: generation
+        - generation: 8
           user_id: user_id
           name: name
-        - generation: generation
+        - generation: 8
           user_id: user_id
           name: name
       properties:
@@ -1146,7 +1312,7 @@ components:
       type: object
     UserSummary:
       example:
-        generation: generation
+        generation: 8
         user_id: user_id
         name: name
       properties:
@@ -1157,8 +1323,10 @@ components:
           description: ユーザー名
           type: string
         generation:
-          description: 世代
-          type: string
+          description: 世代（1-100の範囲）
+          maximum: 100
+          minimum: 1
+          type: integer
       required:
       - generation
       - name
@@ -1196,15 +1364,65 @@ components:
       required:
       - name
       type: object
+    EventParticipant:
+      example:
+        generation: 8
+        joined_at: 2000-01-23T04:56:07.000+00:00
+        user_id: user_id
+        name: name
+        status: PENDING
+      properties:
+        user_id:
+          description: ユーザーID
+          type: string
+        name:
+          description: ユーザー名
+          type: string
+        generation:
+          description: 世代（1-100の範囲）
+          maximum: 100
+          minimum: 1
+          type: integer
+        joined_at:
+          description: 参加日時
+          format: date-time
+          type: string
+        status:
+          description: 参加ステータス
+          enum:
+          - PENDING
+          - CONFIRMED
+          - CANCELLED
+          type: string
+      required:
+      - generation
+      - joined_at
+      - name
+      - status
+      - user_id
+      type: object
+    JoinEventRequest:
+      example:
+        user_id: user_id
+      properties:
+        user_id:
+          description: 参加するユーザーID
+          type: string
+      required:
+      - name
+      - user_id
+      type: object
     FeeSetting:
       example:
-        applicable_generation: 0
+        applicable_generation: 8
         fee:
           amount: 0
           currency: JPY
       properties:
         applicable_generation:
-          description: "適用世代（例: 2023, 2024）"
+          description: 適用世代（1-100の範囲）
+          maximum: 100
+          minimum: 1
           type: integer
         fee:
           $ref: '#/components/schemas/Money'

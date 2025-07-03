@@ -23,6 +23,10 @@
     @apply bg-white hover:bg-kmc-gray-50 text-kmc-gray-700 border border-kmc-gray-300 px-4 py-2 rounded-lg font-medium transition-colors duration-200;
   }
   
+  .btn-disabled {
+    @apply bg-kmc-gray-100 text-kmc-gray-400 px-4 py-2 rounded-lg font-medium cursor-not-allowed;
+  }
+  
   .card {
     @apply bg-white rounded-lg shadow-sm border border-kmc-gray-200 hover:shadow-md transition-shadow duration-200;
   }

@@ -10,9 +10,11 @@ go/model_create_role_request.go
 go/model_create_tag_request.go
 go/model_error.go
 go/model_event_details.go
+go/model_event_participant.go
 go/model_event_summary.go
 go/model_fee_setting.go
 go/model_health_check.go
+go/model_join_event_request.go
 go/model_money.go
 go/model_paginated_event_list.go
 go/model_role.go

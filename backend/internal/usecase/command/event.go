@@ -42,6 +42,18 @@ type DeleteEventCommand struct {
 	EventID string
 }
 
+// JoinEventCommand はイベント参加のコマンドを表します
+type JoinEventCommand struct {
+	EventID string
+	UserID  string
+}
+
+// LeaveEventCommand はイベント退出のコマンドを表します
+type LeaveEventCommand struct {
+	EventID string
+	UserID  string
+}
+
 // EventCommandUsecase はイベントコマンドのユースケースを実装します
 type EventCommandUsecase struct {
 	EventRepo repository_interface.EventRepository
@@ -85,6 +97,39 @@ func (uc *EventCommandUsecase) UpdateEvent(ctx context.Context, cmd *UpdateEvent
 // DeleteEvent はイベントを削除します
 func (uc *EventCommandUsecase) DeleteEvent(ctx context.Context, cmd *DeleteEventCommand) error {
 	return uc.EventRepo.Delete(ctx, cmd.EventID)
+}
+
+// JoinEvent はイベントに参加します
+func (uc *EventCommandUsecase) JoinEvent(ctx context.Context, cmd *JoinEventCommand) error {
+	event, err := uc.EventRepo.FindByID(ctx, cmd.EventID)
+	if err != nil {
+		return err
+	}
+
+	user, err := uc.UserRepo.FindByID(ctx, cmd.UserID)
+	if err != nil {
+		return err
+	}
+
+	if err := event.JoinEvent(user); err != nil {
+		return err
+	}
+
+	return uc.EventRepo.Save(ctx, event)
+}
+
+// LeaveEvent はイベントから退出します
+func (uc *EventCommandUsecase) LeaveEvent(ctx context.Context, cmd *LeaveEventCommand) error {
+	event, err := uc.EventRepo.FindByID(ctx, cmd.EventID)
+	if err != nil {
+		return err
+	}
+
+	if err := event.LeaveEvent(cmd.UserID); err != nil {
+		return err
+	}
+
+	return uc.EventRepo.Save(ctx, event)
 }
 
 // 他のコマンド（Update, Publish, Cancel, FinalizeSchedule など）も同様に追加可能

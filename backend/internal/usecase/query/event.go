@@ -35,6 +35,15 @@ type EventDetailsDTO struct {
 	UpdatedAt        string             `json:"updated_at"`
 }
 
+// EventParticipantDTO はイベント参加者表示用のDTO
+type EventParticipantDTO struct {
+	UserID     string                    `json:"user_id"`
+	Name       string                    `json:"name"`
+	Generation int                       `json:"generation"`
+	JoinedAt   string                    `json:"joined_at"`
+	Status     model.ParticipationStatus `json:"status"`
+}
+
 // ListEventsQuery はイベント一覧取得のクエリ
 type ListEventsQuery struct {
 	Page         int
@@ -116,6 +125,27 @@ func (uc *EventQueryUsecase) ListEvents(ctx context.Context, query *ListEventsQu
 		Page:       query.Page,
 		PageSize:   query.PageSize,
 	}, nil
+}
+
+// GetEventParticipants はイベント参加者一覧を取得
+func (uc *EventQueryUsecase) GetEventParticipants(ctx context.Context, eventID string) ([]EventParticipantDTO, error) {
+	participants, err := uc.EventRepo.GetEventParticipants(ctx, eventID)
+	if err != nil {
+		return nil, err
+	}
+
+	dtos := make([]EventParticipantDTO, len(participants))
+	for i, participant := range participants {
+		dtos[i] = EventParticipantDTO{
+			UserID:     participant.UserID,
+			Name:       participant.Name,
+			Generation: participant.Generation,
+			JoinedAt:   participant.JoinedAt.Format("2006-01-02T15:04:05Z"),
+			Status:     participant.Status,
+		}
+	}
+
+	return dtos, nil
 }
 
 // GetEventDetails はイベント詳細を取得

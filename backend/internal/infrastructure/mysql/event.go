@@ -104,6 +104,11 @@ func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) err
 		}
 	}
 
+	// 参加者を保存
+	if err := r.saveParticipants(ctx, event.EventID, event.Participants); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -281,6 +286,104 @@ func (r *MySQLEventRepository) Delete(ctx context.Context, id string) error {
 	query := "DELETE FROM events WHERE event_id = ?"
 	_, err := r.db.ExecContext(ctx, query, id)
 	return err
+}
+
+// GetEventParticipants は指定されたイベントの参加者一覧を取得します
+func (r *MySQLEventRepository) GetEventParticipants(ctx context.Context, eventID string) ([]model.EventParticipant, error) {
+	query := `
+		SELECT ep.user_id, ep.name, ep.generation, ep.joined_at, ep.status
+		FROM event_participants ep
+		WHERE ep.event_id = ?
+		ORDER BY ep.joined_at ASC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, eventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var participants []model.EventParticipant
+	for rows.Next() {
+		var participant model.EventParticipant
+		var statusStr string
+
+		err := rows.Scan(
+			&participant.UserID,
+			&participant.Name,
+			&participant.Generation,
+			&participant.JoinedAt,
+			&statusStr,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		participant.Status = model.ParticipationStatus(statusStr)
+		participants = append(participants, participant)
+	}
+
+	return participants, nil
+}
+
+// AddEventParticipant はイベントに参加者を追加します
+func (r *MySQLEventRepository) AddEventParticipant(ctx context.Context, eventID string, participant model.EventParticipant) error {
+	query := `
+		INSERT INTO event_participants (event_id, user_id, name, generation, joined_at, status)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`
+
+	_, err := r.db.ExecContext(ctx, query,
+		eventID,
+		participant.UserID,
+		participant.Name,
+		participant.Generation,
+		participant.JoinedAt,
+		string(participant.Status),
+	)
+
+	return err
+}
+
+// RemoveEventParticipant はイベントから参加者を削除します
+func (r *MySQLEventRepository) RemoveEventParticipant(ctx context.Context, eventID string, userID string) error {
+	query := `DELETE FROM event_participants WHERE event_id = ? AND user_id = ?`
+	_, err := r.db.ExecContext(ctx, query, eventID, userID)
+	return err
+}
+
+// saveParticipants は参加者一覧を保存します
+func (r *MySQLEventRepository) saveParticipants(ctx context.Context, eventID string, participants []model.EventParticipant) error {
+	// 既存の参加者を削除
+	deleteQuery := `DELETE FROM event_participants WHERE event_id = ?`
+	_, err := r.db.ExecContext(ctx, deleteQuery, eventID)
+	if err != nil {
+		return fmt.Errorf("failed to delete existing participants: %w", err)
+	}
+
+	// 新しい参加者を追加
+	if len(participants) > 0 {
+		insertQuery := `
+			INSERT INTO event_participants (event_id, user_id, name, generation, joined_at, status)
+			VALUES (?, ?, ?, ?, ?, ?)
+		`
+
+		for _, participant := range participants {
+			_, err := r.db.ExecContext(ctx, insertQuery,
+				eventID,
+				participant.UserID,
+				participant.Name,
+				participant.Generation,
+				participant.JoinedAt,
+				string(participant.Status),
+			)
+			if err != nil {
+				return fmt.Errorf("failed to insert participant %s: %w", participant.UserID, err)
+			}
+		}
+	}
+
+	return nil
 }
 
 // Close はデータベース接続を閉じます
@@ -489,6 +592,13 @@ func (r *MySQLEventRepository) loadEventRelations(ctx context.Context, event *mo
 		}
 		event.SchedulePoll = &poll
 	}
+
+	// 参加者を取得
+	participants, err := r.GetEventParticipants(ctx, event.EventID)
+	if err != nil {
+		return err
+	}
+	event.Participants = participants
 
 	return nil
 }
