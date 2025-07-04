@@ -19,9 +19,9 @@ INSERT INTO users (user_id, name, generation, created_at, updated_at) VALUES
 ('member8', '加藤 恵子', 46, NOW(), NOW());
 
 -- 役割の初期データ
-INSERT INTO roles (role_name, description, created_at, updated_at) VALUES
-('admin', 'システム管理者', NOW(), NOW()),
-('member', '一般部員', NOW(), NOW());
+INSERT INTO roles (name, description, created_at, created_by, allowed_assigners, updated_at) VALUES
+('admin', 'システム管理者', NOW(), 'system', '["admin1", "admin2"]', NOW()),
+('member', '一般部員', NOW(), 'system', '["admin1", "admin2"]', NOW());
 
 -- ユーザー役割の初期データ
 INSERT INTO user_roles (user_id, role, created_at) VALUES

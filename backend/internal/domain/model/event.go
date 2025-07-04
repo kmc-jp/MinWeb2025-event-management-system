@@ -28,14 +28,12 @@ type Money struct {
 }
 
 // FeeSetting: 世代ごとの料金ルール
-
 type FeeSetting struct {
 	ApplicableGeneration int64
 	Fee                  Money
 }
 
 // SchedulePoll: 日程調整エンティティ
-
 type SchedulePoll struct {
 	PollType       string // 例: "date_select"
 	CandidateDates []time.Time
@@ -44,7 +42,6 @@ type SchedulePoll struct {
 }
 
 // Comment: コメント
-
 type Comment struct {
 	UserID    string
 	Content   string
@@ -228,16 +225,16 @@ func (e *Event) JoinEvent(user *User) error {
 		}
 	}
 
-	// 参加可能な役割かチェック
+	// 参加可能な役割かチェック（効率化）
+	allowedRolesMap := make(map[UserRole]bool)
+	for _, allowedRole := range e.AllowedRoles {
+		allowedRolesMap[allowedRole] = true
+	}
+
 	hasAllowedRole := false
 	for _, userRole := range user.Roles {
-		for _, allowedRole := range e.AllowedRoles {
-			if userRole == allowedRole {
-				hasAllowedRole = true
-				break
-			}
-		}
-		if hasAllowedRole {
+		if allowedRolesMap[userRole] {
+			hasAllowedRole = true
 			break
 		}
 	}
@@ -259,9 +256,26 @@ func (e *Event) JoinEvent(user *User) error {
 	return nil
 }
 
-func (e *Event) LeaveEvent(userID string) error {
+func (e *Event) LeaveEvent(user *User) error {
+	// 参加可能な役割かチェック（効率化）
+	allowedRolesMap := make(map[UserRole]bool)
+	for _, allowedRole := range e.AllowedRoles {
+		allowedRolesMap[allowedRole] = true
+	}
+
+	hasAllowedRole := false
+	for _, userRole := range user.Roles {
+		if allowedRolesMap[userRole] {
+			hasAllowedRole = true
+			break
+		}
+	}
+
+	if !hasAllowedRole {
+		return fmt.Errorf("user does not have required roles to join this event")
+	}
 	for i, p := range e.Participants {
-		if p.UserID == userID {
+		if p.UserID == user.UserID {
 			// 参加者を削除
 			e.Participants = append(e.Participants[:i], e.Participants[i+1:]...)
 			e.UpdatedAt = time.Now()

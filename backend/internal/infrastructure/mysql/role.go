@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"event-management-system/backend/internal/domain/model"
+	"fmt"
 )
 
 // MySQLRoleRepository はRoleRepositoryのMySQL実装
@@ -74,6 +75,17 @@ func (r *MySQLRoleRepository) FindAll(ctx context.Context) ([]*model.Role, error
 
 // Save は役割情報を保存または更新
 func (r *MySQLRoleRepository) Save(ctx context.Context, role *model.Role) error {
+	// トランザクションを開始
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
 	// allowed_assignersをJSONに変換
 	allowedAssignersJSON, err := json.Marshal(role.AllowedAssigners)
 	if err != nil {
@@ -88,22 +100,47 @@ func (r *MySQLRoleRepository) Save(ctx context.Context, role *model.Role) error 
 		allowed_assigners = VALUES(allowed_assigners)
 	`
 
-	_, err = r.db.ExecContext(ctx, query,
+	_, err = tx.ExecContext(ctx, query,
 		role.Name,
 		role.Description,
 		role.CreatedAt,
 		role.CreatedBy,
 		allowedAssignersJSON,
 	)
+	if err != nil {
+		return err
+	}
 
-	return err
+	// トランザクションをコミット
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
 
 // Delete は役割を削除
 func (r *MySQLRoleRepository) Delete(ctx context.Context, name string) error {
-	query := "DELETE FROM roles WHERE name = ?"
+	// トランザクションを開始
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
 
-	result, err := r.db.ExecContext(ctx, query, name)
+	// 関連するuser_rolesテーブルのデータを削除
+	_, err = tx.ExecContext(ctx, "DELETE FROM user_roles WHERE role = ?", name)
+	if err != nil {
+		return fmt.Errorf("failed to delete user roles: %w", err)
+	}
+
+	// 役割を削除
+	query := "DELETE FROM roles WHERE name = ?"
+	result, err := tx.ExecContext(ctx, query, name)
 	if err != nil {
 		return err
 	}
@@ -115,6 +152,11 @@ func (r *MySQLRoleRepository) Delete(ctx context.Context, name string) error {
 
 	if rowsAffected == 0 {
 		return ErrRoleNotFound
+	}
+
+	// トランザクションをコミット
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil

@@ -23,7 +23,7 @@ export default function EditEventPage() {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [availableTags, setAvailableTags] = useState<any[]>([]);
+  const [tags, setTags] = useState<any[]>([]);
   const [newTag, setNewTag] = useState('');
   useEffect(() => {
     loadEventDetails();
@@ -53,7 +53,7 @@ export default function EditEventPage() {
   const loadTags = async () => {
     try {
       const response = await (getApiClient() as any).listTags();
-      setAvailableTags(response.data);
+      setTags(response.data);
     } catch (err) {
       console.error('Failed to load tags:', err);
     }
@@ -351,13 +351,13 @@ export default function EditEventPage() {
             <div className="mb-8">
               <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">タグ</h2>
               <div className="space-y-4">
-                {availableTags.length > 0 && (
+                {tags.length > 0 && (
                   <div className="mb-3">
                     <label className="block text-sm font-medium text-kmc-gray-600 mb-2">
                       既存のタグから選択
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {availableTags.map((tag) => (
+                      {tags.map((tag) => (
                         <button
                           key={tag.name}
                           type="button"

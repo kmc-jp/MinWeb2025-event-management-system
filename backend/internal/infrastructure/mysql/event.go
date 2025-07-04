@@ -39,6 +39,17 @@ func NewMySQLEventRepositoryWithDB(db *sql.DB) repository_interface.EventReposit
 
 // Save はイベントを保存または更新します
 func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) error {
+	// トランザクションを開始
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
 	// editable_rolesをJSONに変換
 	editableRolesJSON, err := json.Marshal(event.EditableRoles)
 	if err != nil {
@@ -60,7 +71,7 @@ func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) err
 		updated_at = VALUES(updated_at)
 	`
 
-	_, err = r.db.ExecContext(ctx, query,
+	_, err = tx.ExecContext(ctx, query,
 		event.EventID,
 		event.Title,
 		event.Description,
@@ -78,35 +89,40 @@ func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) err
 	}
 
 	// 許可された役割を保存
-	if err := r.saveAllowedRoles(ctx, event.EventID, event.AllowedRoles); err != nil {
+	if err := r.saveAllowedRolesWithTx(ctx, tx, event.EventID, event.AllowedRoles); err != nil {
 		return err
 	}
 
 	// 編集可能な役割を保存
-	if err := r.saveEditableRoles(ctx, event.EventID, event.EditableRoles); err != nil {
+	if err := r.saveEditableRolesWithTx(ctx, tx, event.EventID, event.EditableRoles); err != nil {
 		return err
 	}
 
 	// タグを保存
-	if err := r.saveTags(ctx, event.EventID, event.Tags); err != nil {
+	if err := r.saveTagsWithTx(ctx, tx, event.EventID, event.Tags); err != nil {
 		return err
 	}
 
 	// 料金設定を保存
-	if err := r.saveFeeSettings(ctx, event.EventID, event.FeeSettings); err != nil {
+	if err := r.saveFeeSettingsWithTx(ctx, tx, event.EventID, event.FeeSettings); err != nil {
 		return err
 	}
 
 	// 日程調整情報を保存
 	if event.SchedulePoll != nil {
-		if err := r.saveSchedulePoll(ctx, event.EventID, event.SchedulePoll); err != nil {
+		if err := r.saveSchedulePollWithTx(ctx, tx, event.EventID, event.SchedulePoll); err != nil {
 			return err
 		}
 	}
 
 	// 参加者を保存
-	if err := r.saveParticipants(ctx, event.EventID, event.Participants); err != nil {
+	if err := r.saveParticipantsWithTx(ctx, tx, event.EventID, event.Participants); err != nil {
 		return err
+	}
+
+	// トランザクションをコミット
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil
@@ -283,9 +299,46 @@ func (r *MySQLEventRepository) FindByStatus(ctx context.Context, status model.Ev
 
 // Delete は指定されたIDのイベントを削除します
 func (r *MySQLEventRepository) Delete(ctx context.Context, id string) error {
-	query := "DELETE FROM events WHERE event_id = ?"
-	_, err := r.db.ExecContext(ctx, query, id)
-	return err
+	// トランザクションを開始
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 関連テーブルのデータを削除
+	tables := []string{
+		"event_participants",
+		"event_allowed_roles",
+		"event_editable_roles",
+		"event_tags",
+		"event_fee_settings",
+		"event_schedule_polls",
+	}
+
+	for _, table := range tables {
+		_, err := tx.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s WHERE event_id = ?", table), id)
+		if err != nil {
+			return fmt.Errorf("failed to delete from %s: %w", table, err)
+		}
+	}
+
+	// イベントを削除
+	_, err = tx.ExecContext(ctx, "DELETE FROM events WHERE event_id = ?", id)
+	if err != nil {
+		return fmt.Errorf("failed to delete event: %w", err)
+	}
+
+	// トランザクションをコミット
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
 
 // GetEventParticipants は指定されたイベントの参加者一覧を取得します
@@ -328,12 +381,23 @@ func (r *MySQLEventRepository) GetEventParticipants(ctx context.Context, eventID
 
 // AddEventParticipant はイベントに参加者を追加します
 func (r *MySQLEventRepository) AddEventParticipant(ctx context.Context, eventID string, participant model.EventParticipant) error {
+	// トランザクションを開始
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
 	query := `
 		INSERT INTO event_participants (event_id, user_id, name, generation, joined_at, status)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
 
-	_, err := r.db.ExecContext(ctx, query,
+	_, err = tx.ExecContext(ctx, query,
 		eventID,
 		participant.UserID,
 		participant.Name,
@@ -341,15 +405,43 @@ func (r *MySQLEventRepository) AddEventParticipant(ctx context.Context, eventID 
 		participant.JoinedAt,
 		string(participant.Status),
 	)
+	if err != nil {
+		return err
+	}
 
-	return err
+	// トランザクションをコミット
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
 
 // RemoveEventParticipant はイベントから参加者を削除します
 func (r *MySQLEventRepository) RemoveEventParticipant(ctx context.Context, eventID string, userID string) error {
+	// トランザクションを開始
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
 	query := `DELETE FROM event_participants WHERE event_id = ? AND user_id = ?`
-	_, err := r.db.ExecContext(ctx, query, eventID, userID)
-	return err
+	_, err = tx.ExecContext(ctx, query, eventID, userID)
+	if err != nil {
+		return err
+	}
+
+	// トランザクションをコミット
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
 
 // saveParticipants は参加者一覧を保存します
@@ -370,6 +462,39 @@ func (r *MySQLEventRepository) saveParticipants(ctx context.Context, eventID str
 
 		for _, participant := range participants {
 			_, err := r.db.ExecContext(ctx, insertQuery,
+				eventID,
+				participant.UserID,
+				participant.Name,
+				participant.Generation,
+				participant.JoinedAt,
+				string(participant.Status),
+			)
+			if err != nil {
+				return fmt.Errorf("failed to insert participant %s: %w", participant.UserID, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (r *MySQLEventRepository) saveParticipantsWithTx(ctx context.Context, tx *sql.Tx, eventID string, participants []model.EventParticipant) error {
+	// 既存の参加者を削除
+	deleteQuery := `DELETE FROM event_participants WHERE event_id = ?`
+	_, err := tx.ExecContext(ctx, deleteQuery, eventID)
+	if err != nil {
+		return fmt.Errorf("failed to delete existing participants: %w", err)
+	}
+
+	// 新しい参加者を追加
+	if len(participants) > 0 {
+		insertQuery := `
+			INSERT INTO event_participants (event_id, user_id, name, generation, joined_at, status)
+			VALUES (?, ?, ?, ?, ?, ?)
+		`
+
+		for _, participant := range participants {
+			_, err := tx.ExecContext(ctx, insertQuery,
 				eventID,
 				participant.UserID,
 				participant.Name,
@@ -409,6 +534,23 @@ func (r *MySQLEventRepository) saveAllowedRoles(ctx context.Context, eventID str
 	return nil
 }
 
+func (r *MySQLEventRepository) saveAllowedRolesWithTx(ctx context.Context, tx *sql.Tx, eventID string, roles []model.UserRole) error {
+	// 既存の役割を削除
+	_, err := tx.ExecContext(ctx, "DELETE FROM event_allowed_roles WHERE event_id = ?", eventID)
+	if err != nil {
+		return err
+	}
+
+	// 新しい役割を挿入
+	for _, role := range roles {
+		_, err := tx.ExecContext(ctx, "INSERT INTO event_allowed_roles (event_id, role) VALUES (?, ?)", eventID, string(role))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (r *MySQLEventRepository) saveTags(ctx context.Context, eventID string, tags []model.Tag) error {
 	// 既存のタグを削除
 	_, err := r.db.ExecContext(ctx, "DELETE FROM event_tags WHERE event_id = ?", eventID)
@@ -419,6 +561,23 @@ func (r *MySQLEventRepository) saveTags(ctx context.Context, eventID string, tag
 	// 新しいタグを挿入
 	for _, tag := range tags {
 		_, err := r.db.ExecContext(ctx, "INSERT INTO event_tags (event_id, tag) VALUES (?, ?)", eventID, string(tag))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *MySQLEventRepository) saveTagsWithTx(ctx context.Context, tx *sql.Tx, eventID string, tags []model.Tag) error {
+	// 既存のタグを削除
+	_, err := tx.ExecContext(ctx, "DELETE FROM event_tags WHERE event_id = ?", eventID)
+	if err != nil {
+		return err
+	}
+
+	// 新しいタグを挿入
+	for _, tag := range tags {
+		_, err := tx.ExecContext(ctx, "INSERT INTO event_tags (event_id, tag) VALUES (?, ?)", eventID, string(tag))
 		if err != nil {
 			return err
 		}
@@ -445,6 +604,25 @@ func (r *MySQLEventRepository) saveFeeSettings(ctx context.Context, eventID stri
 	return nil
 }
 
+func (r *MySQLEventRepository) saveFeeSettingsWithTx(ctx context.Context, tx *sql.Tx, eventID string, feeSettings []model.FeeSetting) error {
+	// 既存の料金設定を削除
+	_, err := tx.ExecContext(ctx, "DELETE FROM event_fee_settings WHERE event_id = ?", eventID)
+	if err != nil {
+		return err
+	}
+
+	// 新しい料金設定を挿入
+	for _, fs := range feeSettings {
+		_, err := tx.ExecContext(ctx,
+			"INSERT INTO event_fee_settings (event_id, applicable_generation, fee_amount, fee_currency) VALUES (?, ?, ?, ?)",
+			eventID, fs.ApplicableGeneration, fs.Fee.Amount, fs.Fee.Currency)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (r *MySQLEventRepository) saveSchedulePoll(ctx context.Context, eventID string, poll *model.SchedulePoll) error {
 	// 日程調整情報をJSONとして保存
 	pollData, err := json.Marshal(poll)
@@ -461,6 +639,22 @@ func (r *MySQLEventRepository) saveSchedulePoll(ctx context.Context, eventID str
 	return err
 }
 
+func (r *MySQLEventRepository) saveSchedulePollWithTx(ctx context.Context, tx *sql.Tx, eventID string, poll *model.SchedulePoll) error {
+	// 日程調整情報をJSONとして保存
+	pollData, err := json.Marshal(poll)
+	if err != nil {
+		return err
+	}
+
+	query := `
+		INSERT INTO event_schedule_polls (event_id, poll_data)
+		VALUES (?, ?)
+		ON DUPLICATE KEY UPDATE poll_data = VALUES(poll_data)
+	`
+	_, err = tx.ExecContext(ctx, query, eventID, pollData)
+	return err
+}
+
 func (r *MySQLEventRepository) saveEditableRoles(ctx context.Context, eventID string, roles []model.UserRole) error {
 	// 既存の編集可能な役割を削除
 	deleteQuery := `DELETE FROM event_editable_roles WHERE event_id = ?`
@@ -473,6 +667,34 @@ func (r *MySQLEventRepository) saveEditableRoles(ctx context.Context, eventID st
 	if len(roles) > 0 {
 		insertQuery := `INSERT INTO event_editable_roles (event_id, role_name) VALUES (?, ?)`
 		stmt, err := r.db.PrepareContext(ctx, insertQuery)
+		if err != nil {
+			return fmt.Errorf("failed to prepare editable roles insert statement: %w", err)
+		}
+		defer stmt.Close()
+
+		for _, role := range roles {
+			_, err := stmt.ExecContext(ctx, eventID, string(role))
+			if err != nil {
+				return fmt.Errorf("failed to insert editable role %s: %w", role, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (r *MySQLEventRepository) saveEditableRolesWithTx(ctx context.Context, tx *sql.Tx, eventID string, roles []model.UserRole) error {
+	// 既存の編集可能な役割を削除
+	deleteQuery := `DELETE FROM event_editable_roles WHERE event_id = ?`
+	_, err := tx.ExecContext(ctx, deleteQuery, eventID)
+	if err != nil {
+		return fmt.Errorf("failed to delete existing editable roles: %w", err)
+	}
+
+	// 新しい編集可能な役割を挿入
+	if len(roles) > 0 {
+		insertQuery := `INSERT INTO event_editable_roles (event_id, role_name) VALUES (?, ?)`
+		stmt, err := tx.PrepareContext(ctx, insertQuery)
 		if err != nil {
 			return fmt.Errorf("failed to prepare editable roles insert statement: %w", err)
 		}

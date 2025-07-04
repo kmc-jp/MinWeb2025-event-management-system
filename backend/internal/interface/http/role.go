@@ -90,11 +90,11 @@ func (h *RoleHandler) GetRoleDetails(c *gin.Context) {
 
 // CreateRole は新しい役割を作成
 func (h *RoleHandler) CreateRole(c *gin.Context) {
-	// 認証情報を取得（簡易実装）
+	// 認証情報を取得
 	userID := c.GetString("user_id")
 	if userID == "" {
-		// 開発用：認証が実装されていない場合はダミーユーザーIDを使用
-		userID = "dummy-user-001"
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
 	}
 
 	var req CreateRoleRequest
@@ -130,11 +130,11 @@ func (h *RoleHandler) CreateRole(c *gin.Context) {
 
 // UpdateRole は役割を更新
 func (h *RoleHandler) UpdateRole(c *gin.Context) {
-	// 認証情報を取得（簡易実装）
+	// 認証情報を取得
 	userID := c.GetString("user_id")
 	if userID == "" {
-		// 開発用：認証が実装されていない場合はダミーユーザーIDを使用
-		userID = "dummy-user-001"
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
 	}
 
 	roleName := c.Param("role_name")
@@ -178,11 +178,11 @@ func (h *RoleHandler) UpdateRole(c *gin.Context) {
 
 // DeleteRole は役割を削除
 func (h *RoleHandler) DeleteRole(c *gin.Context) {
-	// 認証情報を取得（簡易実装）
+	// 認証情報を取得
 	userID := c.GetString("user_id")
 	if userID == "" {
-		// 開発用：認証が実装されていない場合はダミーユーザーIDを使用
-		userID = "dummy-user-001"
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
 	}
 
 	roleName := c.Param("role_name")
@@ -212,11 +212,11 @@ func (h *RoleHandler) DeleteRole(c *gin.Context) {
 
 // AssignRoleToUser はユーザーに役割を付与
 func (h *RoleHandler) AssignRoleToUser(c *gin.Context) {
-	// 認証情報を取得（簡易実装）
+	// 認証情報を取得
 	userID := c.GetString("user_id")
 	if userID == "" {
-		// 開発用：認証が実装されていない場合はダミーユーザーIDを使用
-		userID = "dummy-user-001"
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
 	}
 
 	targetUserID := c.Param("user_id")
@@ -262,11 +262,11 @@ func (h *RoleHandler) AssignRoleToUser(c *gin.Context) {
 
 // RemoveRoleFromUser はユーザーから役割を削除
 func (h *RoleHandler) RemoveRoleFromUser(c *gin.Context) {
-	// 認証情報を取得（簡易実装）
+	// 認証情報を取得
 	userID := c.GetString("user_id")
 	if userID == "" {
-		// 開発用：認証が実装されていない場合はダミーユーザーIDを使用
-		userID = "dummy-user-001"
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
 	}
 
 	targetUserID := c.Param("user_id")

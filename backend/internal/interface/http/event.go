@@ -88,30 +88,17 @@ func (h *EventHandler) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	// 認証情報からユーザーIDを取得（開発用にダミーユーザーIDを使用）
+	// 認証情報からユーザーIDを取得
 	organizerID := c.GetString("user_id")
 	if organizerID == "" {
-		// 開発用：認証が実装されていない場合はダミーユーザーIDを使用
-		organizerID = "dummy-user-001"
-	}
-
-	// イベント作成権限チェック（admin役割を持つユーザーのみ作成可能）
-	user, err := h.userQueryUsecase.GetUser(c.Request.Context(), organizerID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
-	hasAdminRole := false
-	for _, role := range user.Roles {
-		if role == model.UserRoleAdmin {
-			hasAdminRole = true
-			break
-		}
-	}
-
-	if !hasAdminRole {
-		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions to create events"})
+	// ユーザーの存在確認のみ行う（権限チェックは削除）
+	_, err := h.userQueryUsecase.GetUser(c.Request.Context(), organizerID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
 
@@ -195,7 +182,8 @@ func (h *EventHandler) UpdateEvent(c *gin.Context) {
 	// 認証情報からユーザーIDを取得
 	userID := c.GetString("user_id")
 	if userID == "" {
-		userID = "dummy-user-001"
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
 	}
 
 	// イベント詳細を取得
@@ -254,7 +242,8 @@ func (h *EventHandler) DeleteEvent(c *gin.Context) {
 	// 認証情報からユーザーIDを取得
 	userID := c.GetString("user_id")
 	if userID == "" {
-		userID = "dummy-user-001"
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
 	}
 
 	// イベント詳細を取得

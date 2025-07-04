@@ -125,7 +125,12 @@ func (uc *EventCommandUsecase) LeaveEvent(ctx context.Context, cmd *LeaveEventCo
 		return err
 	}
 
-	if err := event.LeaveEvent(cmd.UserID); err != nil {
+	user, err := uc.UserRepo.FindByID(ctx, cmd.UserID)
+	if err != nil {
+		return err
+	}
+
+	if err := event.LeaveEvent(user); err != nil {
 		return err
 	}
 

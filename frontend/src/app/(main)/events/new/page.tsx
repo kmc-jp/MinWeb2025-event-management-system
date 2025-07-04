@@ -35,8 +35,8 @@ export default function CreateEventPage() {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [availableTags, setAvailableTags] = useState<any[]>([]);
-  const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
+  const [tags, setTags] = useState<any[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [newTag, setNewTag] = useState('');
   const [newPollCandidate, setNewPollCandidate] = useState('');
 
@@ -48,7 +48,7 @@ export default function CreateEventPage() {
   const loadTags = async () => {
     try {
       const response = await (getApiClient() as any).listTags();
-      setAvailableTags(response.data);
+      setTags(response.data);
     } catch (err) {
       console.error('Failed to load tags:', err);
     }
@@ -57,7 +57,7 @@ export default function CreateEventPage() {
   const loadRoles = async () => {
     try {
       const response = await (getApiClient() as any).listRoles();
-      setAvailableRoles(response.data);
+      setRoles(response.data);
     } catch (err) {
       console.error('Failed to load roles:', err);
     }
@@ -163,20 +163,39 @@ export default function CreateEventPage() {
     try {
       const apiClient = getApiClient();
       
+      // 日付文字列をISO 8601形式に変換する関数
+      const formatDateTime = (dateTimeString: string): string => {
+        if (!dateTimeString) return '';
+        // datetime-localの形式（YYYY-MM-DDTHH:mm）をISO 8601形式に変換
+        const date = new Date(dateTimeString);
+        return date.toISOString();
+      };
+      
       // 日程情報を適切に処理
       const eventData = {
         ...formData,
         // 日程確定の場合は確定した日程を設定
-        confirmed_date: formData.schedule_type === 'confirmed' ? formData.confirmed_date : undefined,
+        confirmed_date: formData.schedule_type === 'confirmed' && formData.confirmed_date 
+          ? formatDateTime(formData.confirmed_date) 
+          : undefined,
         // 日程調整の場合は日程確定予定日を設定
-        schedule_deadline: formData.schedule_type === 'polling' ? formData.schedule_deadline : undefined,
+        schedule_deadline: formData.schedule_type === 'polling' && formData.schedule_deadline
+          ? formatDateTime(formData.schedule_deadline)
+          : undefined,
+        // 日程調整の候補日時もISO 8601形式に変換
+        poll_candidates: formData.poll_candidates?.map(candidate => formatDateTime(candidate)) || [],
       };
+      
+      console.log('Submitting event data:', eventData);
+      console.log('confirmed_date:', eventData.confirmed_date);
+      console.log('schedule_deadline:', eventData.schedule_deadline);
       
       const response = await apiClient.createEvent(eventData);
       
       // 作成成功後、イベント詳細ページにリダイレクト
       router.push(`/events/${response.data.event_id}`);
     } catch (error) {
+      console.error('Error creating event:', error);
       setError(handleApiError(error));
     } finally {
       setLoading(false);
@@ -266,7 +285,7 @@ export default function CreateEventPage() {
                     役割を選択
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {availableRoles.map((role) => (
+                    {roles.map((role) => (
                       <button
                         key={role.name}
                         type="button"
@@ -299,7 +318,7 @@ export default function CreateEventPage() {
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {formData.allowed_roles.map((roleName) => {
-                        const role = availableRoles.find(r => r.name === roleName);
+                        const role = roles.find(r => r.name === roleName);
                         return (
                           <span
                             key={roleName}
@@ -337,7 +356,7 @@ export default function CreateEventPage() {
                     役割を選択
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {availableRoles.map((role) => (
+                    {roles.map((role) => (
                       <button
                         key={role.name}
                         type="button"
@@ -370,7 +389,7 @@ export default function CreateEventPage() {
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {formData.editable_roles.map((roleName) => {
-                        const role = availableRoles.find(r => r.name === roleName);
+                        const role = roles.find(r => r.name === roleName);
                         return (
                           <span
                             key={roleName}
@@ -477,13 +496,13 @@ export default function CreateEventPage() {
               <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">タグ</h2>
               <div className="space-y-4">
                 {/* 既存タグの選択 */}
-                {availableTags.length > 0 && (
+                {tags.length > 0 && (
                   <div className="mb-3">
                     <label className="block text-sm font-medium text-kmc-gray-600 mb-2">
                       既存のタグから選択
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {availableTags.map((tag) => (
+                      {tags.map((tag) => (
                         <button
                           key={tag.name}
                           type="button"

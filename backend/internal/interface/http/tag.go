@@ -51,11 +51,11 @@ func (h *TagHandler) ListTags(c *gin.Context) {
 
 // CreateTag は新しいタグを作成
 func (h *TagHandler) CreateTag(c *gin.Context) {
-	// 認証情報を取得（簡易実装）
+	// 認証情報を取得
 	userID := c.GetString("user_id")
 	if userID == "" {
-		// 開発用：認証が実装されていない場合はダミーユーザーIDを使用
-		userID = "dummy-user-001"
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
 	}
 
 	var req CreateTagRequest
