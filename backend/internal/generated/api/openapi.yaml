@@ -885,21 +885,21 @@ components:
         venue: venue
         description: description
         created_at: 2000-01-23T04:56:07.000+00:00
+        allowed_participation_roles:
+        - null
+        - null
         confirmed_date: 2000-01-23T04:56:07.000+00:00
         title: title
         tags:
         - tags
         - tags
-        allowed_roles:
-        - null
-        - null
         event_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
         updated_at: 2000-01-23T04:56:07.000+00:00
         schedule_deadline: 2000-01-23T04:56:07.000+00:00
+        allowed_edit_roles:
+        - null
+        - null
         organizer_name: organizer_name
-        editable_roles:
-        - null
-        - null
         status: DRAFT
         fee_settings:
         - applicable_generation: 8
@@ -933,12 +933,12 @@ components:
         venue:
           description: 会場
           type: string
-        allowed_roles:
+        allowed_participation_roles:
           description: 参加可能な役割
           items:
             $ref: '#/components/schemas/UserRole'
           type: array
-        editable_roles:
+        allowed_edit_roles:
           description: 編集可能な役割
           items:
             $ref: '#/components/schemas/UserRole'
@@ -1034,17 +1034,17 @@ components:
         - 2000-01-23T04:56:07.000+00:00
         - 2000-01-23T04:56:07.000+00:00
         venue: venue
-        allowed_roles:
-        - null
-        - null
         description: description
         schedule_deadline: 2000-01-23T04:56:07.000+00:00
+        allowed_participation_roles:
+        - null
+        - null
         poll_type: date_select
+        allowed_edit_roles:
+        - null
+        - null
         confirmed_date: 2000-01-23T04:56:07.000+00:00
         title: title
-        editable_roles:
-        - null
-        - null
         tags:
         - tags
         - tags
@@ -1071,12 +1071,12 @@ components:
           description: 会場
           maxLength: 200
           type: string
-        allowed_roles:
+        allowed_participation_roles:
           description: 参加可能な役割
           items:
             $ref: '#/components/schemas/UserRole'
           type: array
-        editable_roles:
+        allowed_edit_roles:
           description: 編集可能な役割
           items:
             $ref: '#/components/schemas/UserRole'
@@ -1110,7 +1110,8 @@ components:
           format: date-time
           type: string
       required:
-      - allowed_roles
+      - allowed_edit_roles
+      - allowed_participation_roles
       - title
       type: object
     CreateEventResponse:
@@ -1127,14 +1128,14 @@ components:
     UpdateEventRequest:
       example:
         venue: venue
-        allowed_roles:
-        - null
-        - null
         description: description
+        allowed_participation_roles:
+        - null
+        - null
+        allowed_edit_roles:
+        - null
+        - null
         title: title
-        editable_roles:
-        - null
-        - null
         tags:
         - tags
         - tags
@@ -1161,12 +1162,12 @@ components:
           description: 会場
           maxLength: 200
           type: string
-        allowed_roles:
+        allowed_participation_roles:
           description: 参加可能な役割
           items:
             $ref: '#/components/schemas/UserRole'
           type: array
-        editable_roles:
+        allowed_edit_roles:
           description: 編集可能な役割
           items:
             $ref: '#/components/schemas/UserRole'
@@ -1182,8 +1183,8 @@ components:
             $ref: '#/components/schemas/FeeSetting'
           type: array
       required:
-      - allowed_roles
-      - editable_roles
+      - allowed_edit_roles
+      - allowed_participation_roles
       - title
       type: object
     User:
@@ -1423,7 +1424,6 @@ components:
           description: 参加するユーザーID
           type: string
       required:
-      - name
       - user_id
       type: object
     FeeSetting:

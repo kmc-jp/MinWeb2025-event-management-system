@@ -7,7 +7,9 @@ import { getApiClient, handleApiError } from '../../../../lib/api';
 import { CreateEventRequest, FeeSetting, Money, Role } from '../../../../generated/api';
 
 // 日程設定を含む拡張されたCreateEventRequest型
-interface ExtendedCreateEventRequest extends Omit<CreateEventRequest, 'allowed_users'> {
+interface ExtendedCreateEventRequest extends Omit<CreateEventRequest, 'allowed_users' | 'allowed_roles' | 'editable_roles'> {
+  allowed_participation_roles: string[];
+  allowed_edit_roles: string[];
   allowed_users?: string[];
   schedule_type?: 'confirmed' | 'polling';
   confirmed_date?: string;
@@ -21,8 +23,8 @@ export default function CreateEventPage() {
     title: '',
     description: '',
     venue: '',
-    allowed_roles: [],
-    editable_roles: [], // 追加
+    allowed_participation_roles: [],
+    allowed_edit_roles: [],
     allowed_users: [],
     tags: [],
     fee_settings: [],
@@ -155,6 +157,16 @@ export default function CreateEventPage() {
     }));
   };
 
+  // 送信前にフィールド名をAPI用に変換
+  const toApiRequest = (formData: ExtendedCreateEventRequest): CreateEventRequest => {
+    const { allowed_participation_roles, allowed_edit_roles, ...rest } = formData;
+    return {
+      ...rest,
+      allowed_participation_roles,
+      allowed_edit_roles,
+    } as CreateEventRequest;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -190,7 +202,7 @@ export default function CreateEventPage() {
       console.log('confirmed_date:', eventData.confirmed_date);
       console.log('schedule_deadline:', eventData.schedule_deadline);
       
-      const response = await apiClient.createEvent(eventData);
+      const response = await apiClient.createEvent(toApiRequest(eventData));
       
       // 作成成功後、イベント詳細ページにリダイレクト
       router.push(`/events/${response.data.event_id}`);
@@ -290,16 +302,16 @@ export default function CreateEventPage() {
                         key={role.name}
                         type="button"
                         onClick={() => {
-                          if (!formData.allowed_roles.includes(role.name)) {
+                          if (!formData.allowed_participation_roles.includes(role.name)) {
                             setFormData(prev => ({
                               ...prev,
-                              allowed_roles: [...prev.allowed_roles, role.name]
+                              allowed_participation_roles: [...prev.allowed_participation_roles, role.name]
                             }));
                           }
                         }}
-                        disabled={formData.allowed_roles.includes(role.name)}
+                        disabled={formData.allowed_participation_roles.includes(role.name)}
                         className={`px-3 py-1 rounded-full text-sm border ${
-                          formData.allowed_roles.includes(role.name)
+                          formData.allowed_participation_roles.includes(role.name)
                             ? 'bg-kmc-500 text-white border-kmc-500'
                             : 'bg-white text-kmc-700 border-kmc-300 hover:bg-kmc-50'
                         }`}
@@ -311,13 +323,13 @@ export default function CreateEventPage() {
                 </div>
                 
                 {/* 選択された役割の表示 */}
-                {formData.allowed_roles.length > 0 && (
+                {formData.allowed_participation_roles.length > 0 && (
                   <div className="mt-3">
                     <label className="block text-sm font-medium text-kmc-gray-600 mb-2">
                       選択された役割
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {formData.allowed_roles.map((roleName) => {
+                      {formData.allowed_participation_roles.map((roleName) => {
                         const role = roles.find(r => r.name === roleName);
                         return (
                           <span
@@ -330,7 +342,7 @@ export default function CreateEventPage() {
                               onClick={() => {
                                 setFormData(prev => ({
                                   ...prev,
-                                  allowed_roles: prev.allowed_roles.filter(r => r !== roleName)
+                                  allowed_participation_roles: prev.allowed_participation_roles.filter(r => r !== roleName)
                                 }));
                               }}
                               className="ml-2 text-kmc-600 hover:text-kmc-800"
@@ -361,16 +373,16 @@ export default function CreateEventPage() {
                         key={role.name}
                         type="button"
                         onClick={() => {
-                          if (!formData.editable_roles?.includes(role.name)) {
+                          if (!formData.allowed_edit_roles?.includes(role.name)) {
                             setFormData(prev => ({
                               ...prev,
-                              editable_roles: [...(prev.editable_roles || []), role.name]
+                              allowed_edit_roles: [...(prev.allowed_edit_roles || []), role.name]
                             }));
                           }
                         }}
-                        disabled={formData.editable_roles?.includes(role.name)}
+                        disabled={formData.allowed_edit_roles?.includes(role.name)}
                         className={`px-3 py-1 rounded-full text-sm border ${
-                          formData.editable_roles?.includes(role.name)
+                          formData.allowed_edit_roles?.includes(role.name)
                             ? 'bg-kmc-500 text-white border-kmc-500'
                             : 'bg-white text-kmc-700 border-kmc-300 hover:bg-kmc-50'
                         }`}
@@ -382,13 +394,13 @@ export default function CreateEventPage() {
                 </div>
                 
                 {/* 選択された役割の表示 */}
-                {formData.editable_roles && formData.editable_roles.length > 0 && (
+                {formData.allowed_edit_roles && formData.allowed_edit_roles.length > 0 && (
                   <div className="mt-3">
                     <label className="block text-sm font-medium text-kmc-gray-600 mb-2">
                       選択された役割
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {formData.editable_roles.map((roleName) => {
+                      {formData.allowed_edit_roles.map((roleName) => {
                         const role = roles.find(r => r.name === roleName);
                         return (
                           <span
@@ -401,7 +413,7 @@ export default function CreateEventPage() {
                               onClick={() => {
                                 setFormData(prev => ({
                                   ...prev,
-                                  editable_roles: (prev.editable_roles || []).filter(r => r !== roleName)
+                                  allowed_edit_roles: (prev.allowed_edit_roles || []).filter(r => r !== roleName)
                                 }));
                               }}
                               className="ml-2 text-kmc-600 hover:text-kmc-800"

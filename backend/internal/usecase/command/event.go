@@ -10,31 +10,30 @@ import (
 // CreateEventCommand はイベント作成のコマンドを表します
 // CQRSパターンに従い、書き込み操作をコマンドとして定義します
 type CreateEventCommand struct {
-	OrganizerID      string
-	Title            string
-	Description      string
-	Venue            string
-	AllowedRoles     []model.UserRole
-	EditableRoles    []model.UserRole
-	AllowedUsers     []string
-	Tags             []model.Tag
-	FeeSettings      []model.FeeSetting
-	PollType         string
-	PollCandidates   []time.Time
-	ConfirmedDate    *time.Time
-	ScheduleDeadline *time.Time
+	OrganizerID               string
+	Title                     string
+	Description               string
+	Venue                     string
+	AllowedParticipationRoles []model.UserRole
+	AllowedEditRoles          []model.UserRole
+	Tags                      []model.Tag
+	FeeSettings               []model.FeeSetting
+	PollType                  string
+	PollCandidates            []time.Time
+	ConfirmedDate             *time.Time
+	ScheduleDeadline          *time.Time
 }
 
 // UpdateEventCommand はイベント更新のコマンドを表します
 type UpdateEventCommand struct {
-	EventID       string
-	Title         string
-	Description   string
-	Venue         string
-	AllowedRoles  []model.UserRole
-	EditableRoles []model.UserRole
-	Tags          []model.Tag
-	FeeSettings   []model.FeeSetting
+	EventID                   string
+	Title                     string
+	Description               string
+	Venue                     string
+	AllowedParticipationRoles []model.UserRole
+	AllowedEditRoles          []model.UserRole
+	Tags                      []model.Tag
+	FeeSettings               []model.FeeSetting
 }
 
 // DeleteEventCommand はイベント削除のコマンドを表します
@@ -72,7 +71,7 @@ func (uc *EventCommandUsecase) CreateEvent(ctx context.Context, cmd *CreateEvent
 	if err != nil {
 		return "", err
 	}
-	event := model.NewEvent(organizer, cmd.Title, cmd.Description, cmd.Venue, cmd.AllowedRoles, cmd.EditableRoles, cmd.AllowedUsers, cmd.Tags, cmd.FeeSettings, cmd.PollType, cmd.PollCandidates, cmd.ConfirmedDate, cmd.ScheduleDeadline)
+	event := cmd.ToEvent(organizer)
 	if err := uc.EventRepo.Save(ctx, event); err != nil {
 		return "", err
 	}
@@ -86,7 +85,7 @@ func (uc *EventCommandUsecase) UpdateEvent(ctx context.Context, cmd *UpdateEvent
 		return err
 	}
 
-	event.UpdateDetails(cmd.Title, cmd.Description, cmd.Venue, cmd.AllowedRoles, cmd.EditableRoles, cmd.Tags, cmd.FeeSettings)
+	cmd.ApplyTo(event)
 
 	if err := uc.EventRepo.Save(ctx, event); err != nil {
 		return err
@@ -138,3 +137,11 @@ func (uc *EventCommandUsecase) LeaveEvent(ctx context.Context, cmd *LeaveEventCo
 }
 
 // 他のコマンド（Update, Publish, Cancel, FinalizeSchedule など）も同様に追加可能
+
+func (c *CreateEventCommand) ToEvent(organizer *model.User) *model.Event {
+	return model.NewEvent(organizer, c.Title, c.Description, c.Venue, c.AllowedParticipationRoles, c.AllowedEditRoles, c.Tags, c.FeeSettings, c.PollType, c.PollCandidates, c.ConfirmedDate, c.ScheduleDeadline)
+}
+
+func (c *UpdateEventCommand) ApplyTo(event *model.Event) {
+	event.UpdateDetails(c.Title, c.Description, c.Venue, c.AllowedParticipationRoles, c.AllowedEditRoles, c.Tags, c.FeeSettings)
+}

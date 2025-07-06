@@ -97,42 +97,40 @@ func NewTagEntity(name, createdBy string) *TagEntity {
 // Event: イベント集約
 
 type Event struct {
-	EventID          string
-	Organizer        *User
-	Title            string
-	Description      string
-	Status           EventStatus
-	AllowedRoles     []UserRole
-	EditableRoles    []UserRole
-	AllowedUsers     []string
-	Tags             []Tag
-	Venue            string
-	SchedulePoll     *SchedulePoll
-	FeeSettings      []FeeSetting
-	Comments         []Comment
-	EventReports     []EventReport
-	Participants     []EventParticipant // イベント参加者
-	ConfirmedDate    *time.Time         // 確定した日程
-	ScheduleDeadline *time.Time         // 日程確定予定日
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	EventID                   string
+	Organizer                 *User
+	Title                     string
+	Description               string
+	Status                    EventStatus
+	AllowedParticipationRoles []UserRole
+	AllowedEditRoles          []UserRole
+	Tags                      []Tag
+	Venue                     string
+	SchedulePoll              *SchedulePoll
+	FeeSettings               []FeeSetting
+	Comments                  []Comment
+	EventReports              []EventReport
+	Participants              []EventParticipant // イベント参加者
+	ConfirmedDate             *time.Time         // 確定した日程
+	ScheduleDeadline          *time.Time         // 日程確定予定日
+	CreatedAt                 time.Time
+	UpdatedAt                 time.Time
 }
 
 // --- ファクトリ・振る舞い ---
 
-func NewEvent(organizer *User, title, description, venue string, allowedRoles, editableRoles []UserRole, allowedUsers []string, tags []Tag, feeSettings []FeeSetting, pollType string, pollCandidates []time.Time, confirmedDate *time.Time, scheduleDeadline *time.Time) *Event {
+func NewEvent(organizer *User, title, description, venue string, allowedParticipationRoles, allowedEditRoles []UserRole, tags []Tag, feeSettings []FeeSetting, pollType string, pollCandidates []time.Time, confirmedDate *time.Time, scheduleDeadline *time.Time) *Event {
 	now := time.Now()
 	return &Event{
-		EventID:       uuid.New().String(),
-		Organizer:     organizer,
-		Title:         title,
-		Description:   description,
-		Status:        EventStatusDraft,
-		AllowedRoles:  allowedRoles,
-		EditableRoles: editableRoles,
-		AllowedUsers:  allowedUsers,
-		Tags:          tags,
-		Venue:         venue,
+		EventID:                   uuid.New().String(),
+		Organizer:                 organizer,
+		Title:                     title,
+		Description:               description,
+		Status:                    EventStatusDraft,
+		AllowedParticipationRoles: allowedParticipationRoles,
+		AllowedEditRoles:          allowedEditRoles,
+		Tags:                      tags,
+		Venue:                     venue,
 		SchedulePoll: &SchedulePoll{
 			PollType:       pollType,
 			CandidateDates: pollCandidates,
@@ -149,12 +147,12 @@ func NewEvent(organizer *User, title, description, venue string, allowedRoles, e
 	}
 }
 
-func (e *Event) UpdateDetails(title, description, venue string, allowedRoles, editableRoles []UserRole, tags []Tag, feeSettings []FeeSetting) {
+func (e *Event) UpdateDetails(title, description, venue string, allowedParticipationRoles, allowedEditRoles []UserRole, tags []Tag, feeSettings []FeeSetting) {
 	e.Title = title
 	e.Description = description
 	e.Venue = venue
-	e.AllowedRoles = allowedRoles
-	e.EditableRoles = editableRoles
+	e.AllowedParticipationRoles = allowedParticipationRoles
+	e.AllowedEditRoles = allowedEditRoles
 	e.Tags = tags
 	e.FeeSettings = feeSettings
 	e.UpdatedAt = time.Now()
@@ -227,7 +225,7 @@ func (e *Event) JoinEvent(user *User) error {
 
 	// 参加可能な役割かチェック（効率化）
 	allowedRolesMap := make(map[UserRole]bool)
-	for _, allowedRole := range e.AllowedRoles {
+	for _, allowedRole := range e.AllowedParticipationRoles {
 		allowedRolesMap[allowedRole] = true
 	}
 
@@ -259,7 +257,7 @@ func (e *Event) JoinEvent(user *User) error {
 func (e *Event) LeaveEvent(user *User) error {
 	// 参加可能な役割かチェック（効率化）
 	allowedRolesMap := make(map[UserRole]bool)
-	for _, allowedRole := range e.AllowedRoles {
+	for _, allowedRole := range e.AllowedParticipationRoles {
 		allowedRolesMap[allowedRole] = true
 	}
 

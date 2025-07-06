@@ -65,13 +65,13 @@ export interface CreateEventRequest {
      * @type {Array<string>}
      * @memberof CreateEventRequest
      */
-    'allowed_roles': Array<string>;
+    'allowed_participation_roles': Array<string>;
     /**
      * 編集可能な役割
      * @type {Array<string>}
      * @memberof CreateEventRequest
      */
-    'editable_roles'?: Array<string>;
+    'allowed_edit_roles': Array<string>;
     /**
      * タグ
      * @type {Array<string>}
@@ -195,13 +195,13 @@ export interface EventDetails {
      * @type {Array<string>}
      * @memberof EventDetails
      */
-    'allowed_roles'?: Array<string>;
+    'allowed_participation_roles'?: Array<string>;
     /**
      * 編集可能な役割
      * @type {Array<string>}
      * @memberof EventDetails
      */
-    'editable_roles'?: Array<string>;
+    'allowed_edit_roles'?: Array<string>;
     /**
      * タグ
      * @type {Array<string>}
@@ -612,13 +612,13 @@ export interface UpdateEventRequest {
      * @type {Array<string>}
      * @memberof UpdateEventRequest
      */
-    'allowed_roles': Array<string>;
+    'allowed_participation_roles': Array<string>;
     /**
      * 編集可能な役割
      * @type {Array<string>}
      * @memberof UpdateEventRequest
      */
-    'editable_roles': Array<string>;
+    'allowed_edit_roles': Array<string>;
     /**
      * タグ
      * @type {Array<string>}

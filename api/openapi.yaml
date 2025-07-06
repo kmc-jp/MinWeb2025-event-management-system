@@ -863,12 +863,12 @@ components:
         venue:
           type: string
           description: 会場
-        allowed_roles:
+        allowed_participation_roles:
           type: array
           items:
             $ref: "#/components/schemas/UserRole"
           description: 参加可能な役割
-        editable_roles:
+        allowed_edit_roles:
           type: array
           items:
             $ref: "#/components/schemas/UserRole"
@@ -948,12 +948,12 @@ components:
           type: string
           description: 会場
           maxLength: 200
-        allowed_roles:
+        allowed_participation_roles:
           type: array
           items:
             $ref: "#/components/schemas/UserRole"
           description: 参加可能な役割
-        editable_roles:
+        allowed_edit_roles:
           type: array
           items:
             $ref: "#/components/schemas/UserRole"
@@ -989,7 +989,8 @@ components:
 
       required:
         - title
-        - allowed_roles
+        - allowed_participation_roles
+        - allowed_edit_roles
 
     CreateEventResponse:
       type: object
@@ -1017,12 +1018,12 @@ components:
           type: string
           description: 会場
           maxLength: 200
-        allowed_roles:
+        allowed_participation_roles:
           type: array
           items:
             $ref: "#/components/schemas/UserRole"
           description: 参加可能な役割
-        editable_roles:
+        allowed_edit_roles:
           type: array
           items:
             $ref: "#/components/schemas/UserRole"
@@ -1039,8 +1040,8 @@ components:
           description: 料金設定
       required:
         - title
-        - allowed_roles
-        - editable_roles
+        - allowed_participation_roles
+        - allowed_edit_roles
 
     # ユーザー関連
     User:
@@ -1242,7 +1243,6 @@ components:
           description: 参加するユーザーID
       required:
         - user_id
-        - name
 
     # 料金設定
     FeeSetting:

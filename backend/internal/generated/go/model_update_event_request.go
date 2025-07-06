@@ -22,10 +22,10 @@ type UpdateEventRequest struct {
 	Venue string `json:"venue,omitempty"`
 
 	// 参加可能な役割
-	AllowedRoles []string `json:"allowed_roles"`
+	AllowedParticipationRoles []string `json:"allowed_participation_roles"`
 
 	// 編集可能な役割
-	EditableRoles []string `json:"editable_roles"`
+	AllowedEditRoles []string `json:"allowed_edit_roles"`
 
 	// タグ
 	Tags []string `json:"tags,omitempty"`

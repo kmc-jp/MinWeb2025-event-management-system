@@ -32,10 +32,10 @@ type EventDetails struct {
 	Venue string `json:"venue,omitempty"`
 
 	// 参加可能な役割
-	AllowedRoles []string `json:"allowed_roles,omitempty"`
+	AllowedParticipationRoles []string `json:"allowed_participation_roles,omitempty"`
 
 	// 編集可能な役割
-	EditableRoles []string `json:"editable_roles,omitempty"`
+	AllowedEditRoles []string `json:"allowed_edit_roles,omitempty"`
 
 	// タグ
 	Tags []string `json:"tags,omitempty"`

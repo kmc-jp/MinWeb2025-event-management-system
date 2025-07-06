@@ -30,29 +30,28 @@ func NewEventHandler(ecu *command.EventCommandUsecase, equ *query.EventQueryUsec
 
 // CreateEventRequest はイベント作成リクエスト
 type CreateEventRequest struct {
-	Title            string             `json:"title" binding:"required"`
-	Description      string             `json:"description"`
-	Venue            string             `json:"venue"`
-	AllowedRoles     []model.UserRole   `json:"allowed_roles"`
-	EditableRoles    []model.UserRole   `json:"editable_roles"`
-	AllowedUsers     []string           `json:"allowed_users"`
-	Tags             []string           `json:"tags"`
-	FeeSettings      []model.FeeSetting `json:"fee_settings"`
-	PollType         string             `json:"poll_type"`
-	PollCandidates   []string           `json:"poll_candidates"`   // ISO 8601形式の日時文字列
-	ConfirmedDate    *string            `json:"confirmed_date"`    // 確定した日程（ISO 8601形式）
-	ScheduleDeadline *string            `json:"schedule_deadline"` // 日程確定予定日（ISO 8601形式）
+	Title                     string             `json:"title" binding:"required"`
+	Description               string             `json:"description"`
+	Venue                     string             `json:"venue"`
+	AllowedParticipationRoles []model.UserRole   `json:"allowed_participation_roles"`
+	AllowedEditRoles          []model.UserRole   `json:"allowed_edit_roles"`
+	Tags                      []string           `json:"tags"`
+	FeeSettings               []model.FeeSetting `json:"fee_settings"`
+	PollType                  string             `json:"poll_type"`
+	PollCandidates            []string           `json:"poll_candidates"`   // ISO 8601形式の日時文字列
+	ConfirmedDate             *string            `json:"confirmed_date"`    // 確定した日程（ISO 8601形式）
+	ScheduleDeadline          *string            `json:"schedule_deadline"` // 日程確定予定日（ISO 8601形式）
 }
 
 // UpdateEventRequest はイベント更新リクエスト
 type UpdateEventRequest struct {
-	Title         string             `json:"title" binding:"required"`
-	Description   string             `json:"description"`
-	Venue         string             `json:"venue"`
-	AllowedRoles  []model.UserRole   `json:"allowed_roles"`
-	EditableRoles []model.UserRole   `json:"editable_roles"`
-	Tags          []string           `json:"tags"`
-	FeeSettings   []model.FeeSetting `json:"fee_settings"`
+	Title                     string             `json:"title" binding:"required"`
+	Description               string             `json:"description"`
+	Venue                     string             `json:"venue"`
+	AllowedParticipationRoles []model.UserRole   `json:"allowed_participation_roles"`
+	AllowedEditRoles          []model.UserRole   `json:"allowed_edit_roles"`
+	Tags                      []string           `json:"tags"`
+	FeeSettings               []model.FeeSetting `json:"fee_settings"`
 }
 
 // JoinEventRequest はイベント参加リクエスト
@@ -141,19 +140,18 @@ func (h *EventHandler) CreateEvent(c *gin.Context) {
 	}
 
 	cmd := &command.CreateEventCommand{
-		OrganizerID:      organizerID,
-		Title:            req.Title,
-		Description:      req.Description,
-		Venue:            req.Venue,
-		AllowedRoles:     req.AllowedRoles,
-		EditableRoles:    req.EditableRoles,
-		AllowedUsers:     req.AllowedUsers,
-		Tags:             tags,
-		FeeSettings:      req.FeeSettings,
-		PollType:         req.PollType,
-		PollCandidates:   pollCandidates,
-		ConfirmedDate:    confirmedDate,
-		ScheduleDeadline: scheduleDeadline,
+		OrganizerID:               organizerID,
+		Title:                     req.Title,
+		Description:               req.Description,
+		Venue:                     req.Venue,
+		AllowedParticipationRoles: req.AllowedParticipationRoles,
+		AllowedEditRoles:          req.AllowedEditRoles,
+		Tags:                      tags,
+		FeeSettings:               req.FeeSettings,
+		PollType:                  req.PollType,
+		PollCandidates:            pollCandidates,
+		ConfirmedDate:             confirmedDate,
+		ScheduleDeadline:          scheduleDeadline,
 	}
 
 	eventID, err := h.eventCommandUsecase.CreateEvent(c.Request.Context(), cmd)
@@ -194,7 +192,7 @@ func (h *EventHandler) UpdateEvent(c *gin.Context) {
 	}
 
 	// 編集権限チェック
-	if err := h.hasEditPermission(c.Request.Context(), userID, event.EditableRoles); err != nil {
+	if err := h.hasEditPermission(c.Request.Context(), userID, event.AllowedEditRoles); err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
@@ -206,14 +204,14 @@ func (h *EventHandler) UpdateEvent(c *gin.Context) {
 	}
 
 	cmd := &command.UpdateEventCommand{
-		EventID:       eventID,
-		Title:         req.Title,
-		Description:   req.Description,
-		Venue:         req.Venue,
-		AllowedRoles:  req.AllowedRoles,
-		EditableRoles: req.EditableRoles,
-		Tags:          tags,
-		FeeSettings:   req.FeeSettings,
+		EventID:                   eventID,
+		Title:                     req.Title,
+		Description:               req.Description,
+		Venue:                     req.Venue,
+		AllowedParticipationRoles: req.AllowedParticipationRoles,
+		AllowedEditRoles:          req.AllowedEditRoles,
+		Tags:                      tags,
+		FeeSettings:               req.FeeSettings,
 	}
 
 	if err := h.eventCommandUsecase.UpdateEvent(c.Request.Context(), cmd); err != nil {
@@ -254,7 +252,7 @@ func (h *EventHandler) DeleteEvent(c *gin.Context) {
 	}
 
 	// 削除権限チェック
-	if err := h.hasEditPermission(c.Request.Context(), userID, event.EditableRoles); err != nil {
+	if err := h.hasEditPermission(c.Request.Context(), userID, event.AllowedEditRoles); err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}

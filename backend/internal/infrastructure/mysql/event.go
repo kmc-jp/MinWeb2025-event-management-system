@@ -51,7 +51,7 @@ func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) err
 	}()
 
 	// editable_rolesをJSONに変換
-	editableRolesJSON, err := json.Marshal(event.EditableRoles)
+	editableRolesJSON, err := json.Marshal(event.AllowedEditRoles)
 	if err != nil {
 		return fmt.Errorf("failed to marshal editable_roles: %w", err)
 	}
@@ -89,12 +89,12 @@ func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) err
 	}
 
 	// 許可された役割を保存
-	if err := r.saveAllowedRolesWithTx(ctx, tx, event.EventID, event.AllowedRoles); err != nil {
+	if err := r.saveAllowedParticipationRolesWithTx(ctx, tx, event.EventID, event.AllowedParticipationRoles); err != nil {
 		return err
 	}
 
 	// 編集可能な役割を保存
-	if err := r.saveEditableRolesWithTx(ctx, tx, event.EventID, event.EditableRoles); err != nil {
+	if err := r.saveAllowedEditRolesWithTx(ctx, tx, event.EventID, event.AllowedEditRoles); err != nil {
 		return err
 	}
 
@@ -168,7 +168,7 @@ func (r *MySQLEventRepository) FindByID(ctx context.Context, id string) (*model.
 	}
 
 	// editable_rolesをJSONから復元
-	if err := json.Unmarshal(editableRolesJSON, &event.EditableRoles); err != nil {
+	if err := json.Unmarshal(editableRolesJSON, &event.AllowedEditRoles); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal editable_roles: %w", err)
 	}
 
@@ -226,7 +226,7 @@ func (r *MySQLEventRepository) FindAll(ctx context.Context) ([]*model.Event, err
 		}
 
 		// editable_rolesをJSONから復元
-		if err := json.Unmarshal(editableRolesJSON, &event.EditableRoles); err != nil {
+		if err := json.Unmarshal(editableRolesJSON, &event.AllowedEditRoles); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal editable_roles: %w", err)
 		}
 
@@ -517,7 +517,7 @@ func (r *MySQLEventRepository) Close() error {
 }
 
 // ヘルパーメソッド群
-func (r *MySQLEventRepository) saveAllowedRoles(ctx context.Context, eventID string, roles []model.UserRole) error {
+func (r *MySQLEventRepository) saveAllowedParticipationRoles(ctx context.Context, eventID string, roles []model.UserRole) error {
 	// 既存の役割を削除
 	_, err := r.db.ExecContext(ctx, "DELETE FROM event_allowed_roles WHERE event_id = ?", eventID)
 	if err != nil {
@@ -534,7 +534,7 @@ func (r *MySQLEventRepository) saveAllowedRoles(ctx context.Context, eventID str
 	return nil
 }
 
-func (r *MySQLEventRepository) saveAllowedRolesWithTx(ctx context.Context, tx *sql.Tx, eventID string, roles []model.UserRole) error {
+func (r *MySQLEventRepository) saveAllowedParticipationRolesWithTx(ctx context.Context, tx *sql.Tx, eventID string, roles []model.UserRole) error {
 	// 既存の役割を削除
 	_, err := tx.ExecContext(ctx, "DELETE FROM event_allowed_roles WHERE event_id = ?", eventID)
 	if err != nil {
@@ -655,7 +655,7 @@ func (r *MySQLEventRepository) saveSchedulePollWithTx(ctx context.Context, tx *s
 	return err
 }
 
-func (r *MySQLEventRepository) saveEditableRoles(ctx context.Context, eventID string, roles []model.UserRole) error {
+func (r *MySQLEventRepository) saveAllowedEditRoles(ctx context.Context, eventID string, roles []model.UserRole) error {
 	// 既存の編集可能な役割を削除
 	deleteQuery := `DELETE FROM event_editable_roles WHERE event_id = ?`
 	_, err := r.db.ExecContext(ctx, deleteQuery, eventID)
@@ -683,7 +683,7 @@ func (r *MySQLEventRepository) saveEditableRoles(ctx context.Context, eventID st
 	return nil
 }
 
-func (r *MySQLEventRepository) saveEditableRolesWithTx(ctx context.Context, tx *sql.Tx, eventID string, roles []model.UserRole) error {
+func (r *MySQLEventRepository) saveAllowedEditRolesWithTx(ctx context.Context, tx *sql.Tx, eventID string, roles []model.UserRole) error {
 	// 既存の編集可能な役割を削除
 	deleteQuery := `DELETE FROM event_editable_roles WHERE event_id = ?`
 	_, err := tx.ExecContext(ctx, deleteQuery, eventID)
@@ -741,7 +741,7 @@ func (r *MySQLEventRepository) loadEventRelations(ctx context.Context, event *mo
 		if err := rows.Scan(&roleStr); err != nil {
 			return err
 		}
-		event.AllowedRoles = append(event.AllowedRoles, model.UserRole(roleStr))
+		event.AllowedParticipationRoles = append(event.AllowedParticipationRoles, model.UserRole(roleStr))
 	}
 
 	// 編集可能な役割を取得
@@ -756,7 +756,7 @@ func (r *MySQLEventRepository) loadEventRelations(ctx context.Context, event *mo
 		if err := rows.Scan(&roleStr); err != nil {
 			return err
 		}
-		event.EditableRoles = append(event.EditableRoles, model.UserRole(roleStr))
+		event.AllowedEditRoles = append(event.AllowedEditRoles, model.UserRole(roleStr))
 	}
 
 	// タグを取得
