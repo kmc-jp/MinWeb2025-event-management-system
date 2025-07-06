@@ -21,6 +21,11 @@ func AssignRoleToUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
+// ConfirmEventSchedule - イベントの日程を確定
+func ConfirmEventSchedule(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{})
+}
+
 // CreateEvent - 新しいイベントを作成
 func CreateEvent(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})

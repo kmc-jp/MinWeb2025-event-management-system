@@ -186,11 +186,11 @@ func (r *MySQLRoleRepository) Exists(ctx context.Context, name string) (bool, er
 // FindUsersByRole は指定された役割を持つユーザー一覧を取得
 func (r *MySQLRoleRepository) FindUsersByRole(ctx context.Context, roleName string) ([]*model.User, error) {
 	query := `
-		SELECT u.user_id, u.name, u.generation
+		SELECT u.user_id, u.generation
 		FROM users u
 		JOIN user_roles ur ON u.user_id = ur.user_id
 		WHERE ur.role = ?
-		ORDER BY u.name
+		ORDER BY u.user_id
 	`
 
 	rows, err := r.db.QueryContext(ctx, query, roleName)
@@ -202,7 +202,7 @@ func (r *MySQLRoleRepository) FindUsersByRole(ctx context.Context, roleName stri
 	var users []*model.User
 	for rows.Next() {
 		var user model.User
-		if err := rows.Scan(&user.UserID, &user.Name, &user.Generation); err != nil {
+		if err := rows.Scan(&user.UserID, &user.Generation); err != nil {
 			return nil, err
 		}
 		users = append(users, &user)

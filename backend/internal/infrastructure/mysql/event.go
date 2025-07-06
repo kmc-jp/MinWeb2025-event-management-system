@@ -89,7 +89,7 @@ func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) err
 		event.Description,
 		string(event.Status),
 		event.Venue,
-		event.Organizer.Name,
+		event.Organizer.UserID,
 		event.SchedulePoll.PollType,
 		pollCandidatesJSON,
 		event.ConfirmedDate,
@@ -210,7 +210,8 @@ func (r *MySQLEventRepository) FindByID(ctx context.Context, id string) (*model.
 
 	event.Status = model.EventStatus(statusStr)
 	event.Organizer = &model.User{
-		Name: organizerName,
+		UserID:     organizerName,
+		Generation: 1,
 	}
 
 	// 関連データを取得
@@ -293,7 +294,8 @@ func (r *MySQLEventRepository) FindAll(ctx context.Context) ([]*model.Event, err
 
 		event.Status = model.EventStatus(statusStr)
 		event.Organizer = &model.User{
-			Name: organizerName,
+			UserID:     organizerName,
+			Generation: 1,
 		}
 
 		// 関連データを取得
@@ -380,7 +382,8 @@ func (r *MySQLEventRepository) FindByStatus(ctx context.Context, status model.Ev
 
 		event.Status = model.EventStatus(statusStr)
 		event.Organizer = &model.User{
-			Name: organizerName,
+			UserID:     organizerName,
+			Generation: 1,
 		}
 
 		// 関連データを取得
@@ -440,10 +443,10 @@ func (r *MySQLEventRepository) Delete(ctx context.Context, id string) error {
 // GetEventParticipants は指定されたイベントの参加者一覧を取得します
 func (r *MySQLEventRepository) GetEventParticipants(ctx context.Context, eventID string) ([]model.EventParticipant, error) {
 	query := `
-		SELECT ep.user_id, ep.name, ep.generation, ep.joined_at, ep.status
+		SELECT ep.user_id, ep.generation, ep.joined_at, ep.status
 		FROM event_participants ep
 		WHERE ep.event_id = ?
-		ORDER BY ep.joined_at ASC
+		ORDER BY ep.joined_at
 	`
 
 	rows, err := r.db.QueryContext(ctx, query, eventID)
@@ -459,7 +462,6 @@ func (r *MySQLEventRepository) GetEventParticipants(ctx context.Context, eventID
 
 		err := rows.Scan(
 			&participant.UserID,
-			&participant.Name,
 			&participant.Generation,
 			&participant.JoinedAt,
 			&statusStr,
@@ -493,17 +495,16 @@ func (r *MySQLEventRepository) AddEventParticipant(ctx context.Context, eventID 
 	}()
 
 	query := `
-		INSERT INTO event_participants (event_id, user_id, name, generation, joined_at, status)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO event_participants (event_id, user_id, generation, joined_at, status)
+		VALUES (?, ?, ?, ?, ?)
 	`
 
 	_, err = tx.ExecContext(ctx, query,
 		eventID,
 		participant.UserID,
-		participant.Name,
 		participant.Generation,
 		participant.JoinedAt,
-		string(participant.Status),
+		participant.Status,
 	)
 	if err != nil {
 		return err
@@ -556,18 +557,17 @@ func (r *MySQLEventRepository) saveParticipants(ctx context.Context, eventID str
 	// 新しい参加者を追加
 	if len(participants) > 0 {
 		insertQuery := `
-				INSERT INTO event_participants (event_id, user_id, name, generation, joined_at, status)
-				VALUES (?, ?, ?, ?, ?, ?)
+				INSERT INTO event_participants (event_id, user_id, generation, joined_at, status)
+				VALUES (?, ?, ?, ?, ?)
 			`
 
 		for _, participant := range participants {
 			_, err := r.db.ExecContext(ctx, insertQuery,
 				eventID,
 				participant.UserID,
-				participant.Name,
 				participant.Generation,
 				participant.JoinedAt,
-				string(participant.Status),
+				participant.Status,
 			)
 			if err != nil {
 				return fmt.Errorf("failed to insert participant %s: %w", participant.UserID, err)
@@ -589,18 +589,17 @@ func (r *MySQLEventRepository) saveParticipantsWithTx(ctx context.Context, tx *s
 	// 新しい参加者を追加
 	if len(participants) > 0 {
 		insertQuery := `
-				INSERT INTO event_participants (event_id, user_id, name, generation, joined_at, status)
-				VALUES (?, ?, ?, ?, ?, ?)
+				INSERT INTO event_participants (event_id, user_id, generation, joined_at, status)
+				VALUES (?, ?, ?, ?, ?)
 			`
 
 		for _, participant := range participants {
 			_, err := tx.ExecContext(ctx, insertQuery,
 				eventID,
 				participant.UserID,
-				participant.Name,
 				participant.Generation,
 				participant.JoinedAt,
-				string(participant.Status),
+				participant.Status,
 			)
 			if err != nil {
 				return fmt.Errorf("failed to insert participant %s: %w", participant.UserID, err)

@@ -105,12 +105,12 @@ INSERT INTO event_edit_roles (event_id, role_name, created_at) VALUES
 ('sample-event-3', 'admin', NOW());
 
 -- サンプル参加者の投入
-INSERT INTO event_participants (event_id, user_id, name, generation, status, joined_at) VALUES
-('sample-event-1', 'member-user-1', '部員ユーザー1', 26, 'CONFIRMED', NOW()),
-('sample-event-1', 'member-user-2', '部員ユーザー2', 27, 'PENDING', NOW()),
-('sample-event-2', 'member-user-3', '部員ユーザー3', 28, 'CONFIRMED', NOW()),
-('sample-event-2', 'member-user-4', '部員ユーザー4', 29, 'CONFIRMED', NOW()),
-('sample-event-3', 'member-user-5', '部員ユーザー5', 30, 'PENDING', NOW());
+INSERT INTO event_participants (event_id, user_id, generation, status, joined_at) VALUES
+('sample-event-1', 'member-user-1', 26, 'CONFIRMED', NOW()),
+('sample-event-1', 'member-user-2', 27, 'PENDING', NOW()),
+('sample-event-2', 'member-user-3', 28, 'CONFIRMED', NOW()),
+('sample-event-2', 'member-user-4', 29, 'CONFIRMED', NOW()),
+('sample-event-3', 'member-user-5', 30, 'PENDING', NOW());
 
 -- サンプル料金設定の投入
 INSERT INTO fee_settings (event_id, applicable_generation, amount, currency, created_at) VALUES

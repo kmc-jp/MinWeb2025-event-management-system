@@ -25,7 +25,6 @@ type RoleDetailsDTO struct {
 // UserSummaryDTO はユーザー概要表示用のDTO
 type UserSummaryDTO struct {
 	UserID     string `json:"user_id"`
-	Name       string `json:"name"`
 	Generation int    `json:"generation"`
 }
 
@@ -92,7 +91,6 @@ func (uc *RoleQueryUsecase) GetRoleDetails(ctx context.Context, name string) (*R
 	for _, user := range users {
 		userSummaries = append(userSummaries, &UserSummaryDTO{
 			UserID:     user.UserID,
-			Name:       user.Name,
 			Generation: user.Generation,
 		})
 	}

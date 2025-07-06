@@ -10,6 +10,10 @@
 
 package generated
 
+import (
+	"time"
+)
+
 type UpdateEventRequest struct {
 
 	// イベントタイトル
@@ -32,4 +36,16 @@ type UpdateEventRequest struct {
 
 	// 料金設定
 	FeeSettings []FeeSetting `json:"fee_settings,omitempty"`
+
+	// 日程調整タイプ
+	PollType string `json:"poll_type,omitempty"`
+
+	// 日程候補（ISO 8601形式）
+	PollCandidates []time.Time `json:"poll_candidates,omitempty"`
+
+	// 確定した日程
+	ConfirmedDate time.Time `json:"confirmed_date,omitempty"`
+
+	// 日程確定予定日
+	ScheduleDeadline time.Time `json:"schedule_deadline,omitempty"`
 }

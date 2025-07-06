@@ -18,13 +18,13 @@ func NewMySQLUserRepository(db *sql.DB) *MySQLUserRepository {
 
 // FindByID は指定されたIDのユーザーを取得
 func (r *MySQLUserRepository) FindByID(ctx context.Context, userID string) (*model.User, error) {
-	query := "SELECT user_id, name, generation FROM users WHERE user_id = ?"
+	query := "SELECT user_id, generation FROM users WHERE user_id = ?"
 
 	row := r.db.QueryRowContext(ctx, query, userID)
 
 	var user model.User
 
-	err := row.Scan(&user.UserID, &user.Name, &user.Generation)
+	err := row.Scan(&user.UserID, &user.Generation)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, ErrUserNotFound
@@ -55,7 +55,7 @@ func (r *MySQLUserRepository) FindByID(ctx context.Context, userID string) (*mod
 
 // FindAll は全てのユーザーを取得
 func (r *MySQLUserRepository) FindAll(ctx context.Context) ([]*model.User, error) {
-	query := "SELECT user_id, name, generation FROM users ORDER BY name"
+	query := "SELECT user_id, generation FROM users ORDER BY user_id"
 
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
@@ -66,7 +66,7 @@ func (r *MySQLUserRepository) FindAll(ctx context.Context) ([]*model.User, error
 	var users []*model.User
 	for rows.Next() {
 		var user model.User
-		if err := rows.Scan(&user.UserID, &user.Name, &user.Generation); err != nil {
+		if err := rows.Scan(&user.UserID, &user.Generation); err != nil {
 			return nil, err
 		}
 
@@ -106,16 +106,14 @@ func (r *MySQLUserRepository) Save(ctx context.Context, user *model.User) error 
 
 	// ユーザー基本情報を保存
 	query := `
-		INSERT INTO users (user_id, name, generation)
-		VALUES (?, ?, ?)
+		INSERT INTO users (user_id, generation)
+		VALUES (?, ?)
 		ON DUPLICATE KEY UPDATE
-		name = VALUES(name),
 		generation = VALUES(generation)
 	`
 
 	_, err = tx.ExecContext(ctx, query,
 		user.UserID,
-		user.Name,
 		user.Generation,
 	)
 	if err != nil {

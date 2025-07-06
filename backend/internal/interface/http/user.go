@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"event-management-system/backend/internal/domain/model"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -67,7 +69,22 @@ func (h *UserHandler) GetCurrentUser(c *gin.Context) {
 
 	user, err := h.userQueryUsecase.GetUser(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		// ユーザーがいなければ新規作成
+		generation := c.GetInt("user_generation")
+		if generation == 0 {
+			generation = 1
+		}
+		newUser := &model.User{
+			UserID:     userID,
+			Generation: generation,
+			Roles:      []model.UserRole{}, // 必要ならデフォルトロール
+		}
+		if err := h.userQueryUsecase.UserRepo.Save(c.Request.Context(), newUser); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
+			return
+		}
+		user, _ = h.userQueryUsecase.GetUser(c.Request.Context(), userID)
+		c.JSON(http.StatusOK, user)
 		return
 	}
 

@@ -1142,9 +1142,6 @@ components:
         user_id:
           type: string
           description: ユーザーID
-        name:
-          type: string
-          description: ユーザー名
         roles:
           type: array
           items:
@@ -1157,7 +1154,6 @@ components:
           description: 世代（1-100の範囲）
       required:
         - user_id
-        - name
         - roles
         - generation
 
@@ -1256,9 +1252,6 @@ components:
         user_id:
           type: string
           description: ユーザーID
-        name:
-          type: string
-          description: ユーザー名
         generation:
           type: integer
           minimum: 1
@@ -1266,7 +1259,6 @@ components:
           description: 世代（1-100の範囲）
       required:
         - user_id
-        - name
         - generation
 
     Tag:
@@ -1304,9 +1296,6 @@ components:
         user_id:
           type: string
           description: ユーザーID
-        name:
-          type: string
-          description: ユーザー名
         generation:
           type: integer
           minimum: 1
@@ -1322,7 +1311,6 @@ components:
           description: 参加ステータス
       required:
         - user_id
-        - name
         - generation
         - joined_at
         - status

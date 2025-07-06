@@ -263,7 +263,9 @@ export default function RolesPage() {
                         <h5 className="font-semibold mb-1">この役割のユーザー</h5>
                         <ul className="list-disc pl-5">
                           {roleDetails?.users.map(user => (
-                            <li key={user.user_id}>{user.name}（{user.user_id} / {user.generation}）</li>
+                            <li key={user.user_id}>
+                              {user.user_id}（{user.generation}期）
+                            </li>
                           ))}
                         </ul>
                       </div>

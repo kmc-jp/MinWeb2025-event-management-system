@@ -52,7 +52,6 @@ paths:
         required: false
         schema:
           enum:
-          - DRAFT
           - SCHEDULE_POLLING
           - CONFIRMED
           - FINISHED
@@ -395,6 +394,62 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: サーバーエラー
       summary: イベントを更新
+  /api/events/{id}/confirm-schedule:
+    post:
+      operationId: confirmEventSchedule
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/confirmEventSchedule_request'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetails'
+          description: 日程確定成功
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: バリデーションエラー
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: 認証エラー
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: 権限不足
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: イベントが見つかりません
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: サーバーエラー
+      summary: イベントの日程を確定
   /api/users/me:
     get:
       operationId: getCurrentUser
@@ -844,7 +899,7 @@ components:
         organizer_name: organizer_name
         confirmed_date: 2000-01-23T04:56:07.000+00:00
         title: title
-        status: DRAFT
+        status: SCHEDULE_POLLING
         tags:
         - tags
         - tags
@@ -859,7 +914,6 @@ components:
         status:
           description: イベントステータス
           enum:
-          - DRAFT
           - SCHEDULE_POLLING
           - CONFIRMED
           - FINISHED
@@ -920,7 +974,7 @@ components:
         - null
         - null
         organizer_name: organizer_name
-        status: DRAFT
+        status: SCHEDULE_POLLING
         fee_settings:
         - applicable_generation: 8
           fee:
@@ -944,7 +998,6 @@ components:
         status:
           description: イベントステータス
           enum:
-          - DRAFT
           - SCHEDULE_POLLING
           - CONFIRMED
           - FINISHED
@@ -1013,7 +1066,7 @@ components:
           organizer_name: organizer_name
           confirmed_date: 2000-01-23T04:56:07.000+00:00
           title: title
-          status: DRAFT
+          status: SCHEDULE_POLLING
           tags:
           - tags
           - tags
@@ -1027,7 +1080,7 @@ components:
           organizer_name: organizer_name
           confirmed_date: 2000-01-23T04:56:07.000+00:00
           title: title
-          status: DRAFT
+          status: SCHEDULE_POLLING
           tags:
           - tags
           - tags
@@ -1153,14 +1206,20 @@ components:
       type: object
     UpdateEventRequest:
       example:
+        poll_candidates:
+        - 2000-01-23T04:56:07.000+00:00
+        - 2000-01-23T04:56:07.000+00:00
         venue: venue
         description: description
+        schedule_deadline: 2000-01-23T04:56:07.000+00:00
         allowed_participation_roles:
         - null
         - null
+        poll_type: SCHEDULE_POLLING
         allowed_edit_roles:
         - null
         - null
+        confirmed_date: 2000-01-23T04:56:07.000+00:00
         title: title
         tags:
         - tags
@@ -1208,6 +1267,26 @@ components:
           items:
             $ref: '#/components/schemas/FeeSetting'
           type: array
+        poll_type:
+          description: 日程調整タイプ
+          enum:
+          - SCHEDULE_POLLING
+          - CONFIRMED
+          type: string
+        poll_candidates:
+          description: 日程候補（ISO 8601形式）
+          items:
+            format: date-time
+            type: string
+          type: array
+        confirmed_date:
+          description: 確定した日程
+          format: date-time
+          type: string
+        schedule_deadline:
+          description: 日程確定予定日
+          format: date-time
+          type: string
       required:
       - allowed_edit_roles
       - allowed_participation_roles
@@ -1220,13 +1299,9 @@ components:
         roles:
         - null
         - null
-        name: name
       properties:
         user_id:
           description: ユーザーID
-          type: string
-        name:
-          description: ユーザー名
           type: string
         roles:
           description: ユーザーの役割リスト
@@ -1240,7 +1315,6 @@ components:
           type: integer
       required:
       - generation
-      - name
       - roles
       - user_id
       type: object
@@ -1321,10 +1395,8 @@ components:
         users:
         - generation: 8
           user_id: user_id
-          name: name
         - generation: 8
           user_id: user_id
-          name: name
       properties:
         name:
           description: 役割名
@@ -1355,13 +1427,9 @@ components:
       example:
         generation: 8
         user_id: user_id
-        name: name
       properties:
         user_id:
           description: ユーザーID
-          type: string
-        name:
-          description: ユーザー名
           type: string
         generation:
           description: 世代（1-100の範囲）
@@ -1370,7 +1438,6 @@ components:
           type: integer
       required:
       - generation
-      - name
       - user_id
       type: object
     Tag:
@@ -1410,14 +1477,10 @@ components:
         generation: 8
         joined_at: 2000-01-23T04:56:07.000+00:00
         user_id: user_id
-        name: name
         status: PENDING
       properties:
         user_id:
           description: ユーザーID
-          type: string
-        name:
-          description: ユーザー名
           type: string
         generation:
           description: 世代（1-100の範囲）
@@ -1438,7 +1501,6 @@ components:
       required:
       - generation
       - joined_at
-      - name
       - status
       - user_id
       type: object
@@ -1507,4 +1569,13 @@ components:
           type: string
       required:
       - error
+      type: object
+    confirmEventSchedule_request:
+      properties:
+        confirmed_date:
+          description: 確定する日程
+          format: date-time
+          type: string
+      required:
+      - confirmed_date
       type: object

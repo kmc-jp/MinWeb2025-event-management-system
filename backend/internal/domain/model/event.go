@@ -71,7 +71,6 @@ const (
 // EventParticipant: イベント参加者
 type EventParticipant struct {
 	UserID     string
-	Name       string
 	Generation int
 	JoinedAt   time.Time
 	Status     EventParticipantStatus
@@ -132,6 +131,14 @@ func NewEvent(organizer *User, title, description, venue string, allowedParticip
 		status = EventStatusSchedulePoll
 	}
 
+	// 作成者を参加者として追加
+	organizerParticipant := EventParticipant{
+		UserID:     organizer.UserID,
+		Generation: organizer.Generation,
+		JoinedAt:   now,
+		Status:     EventParticipantStatusConfirmed, // 作成者は確定済み
+	}
+
 	return &Event{
 		EventID:                   uuid.New().String(),
 		Organizer:                 organizer,
@@ -150,7 +157,7 @@ func NewEvent(organizer *User, title, description, venue string, allowedParticip
 		FeeSettings:      feeSettings,
 		Comments:         []Comment{},
 		EventReports:     []EventReport{},
-		Participants:     []EventParticipant{},
+		Participants:     []EventParticipant{organizerParticipant}, // 作成者を初期参加者として追加
 		ConfirmedDate:    confirmedDate,
 		ScheduleDeadline: scheduleDeadline,
 		CreatedAt:        now,
@@ -294,9 +301,9 @@ func (e *Event) JoinEvent(user *User) error {
 	// 参加者を追加
 	participant := EventParticipant{
 		UserID:     user.UserID,
-		Name:       user.Name,
 		Generation: user.Generation,
 		JoinedAt:   time.Now(),
+		Status:     EventParticipantStatusPending, // 参加者は保留中
 	}
 	e.Participants = append(e.Participants, participant)
 	e.UpdatedAt = time.Now()

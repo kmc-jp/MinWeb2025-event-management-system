@@ -19,9 +19,6 @@ type EventParticipant struct {
 	// ユーザーID
 	UserId string `json:"user_id"`
 
-	// ユーザー名
-	Name string `json:"name"`
-
 	// 世代（1-100の範囲）
 	Generation int32 `json:"generation"`
 

@@ -72,7 +72,6 @@ CREATE TABLE events (
 CREATE TABLE event_participants (
     event_id VARCHAR(36) NOT NULL,
     user_id VARCHAR(255) NOT NULL,
-    name VARCHAR(255) NOT NULL,
     generation INT NOT NULL,
     status ENUM('PENDING', 'CONFIRMED', 'CANCELLED') NOT NULL DEFAULT 'PENDING',
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

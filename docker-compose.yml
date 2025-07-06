@@ -37,6 +37,7 @@ services:
       - ./backend:/app
       - /app/vendor
     environment:
+      - ENV=development
       - DB_HOST=db
       - DB_PORT=3306
       - DB_DATABASE=${DB_DATABASE:-event_management}

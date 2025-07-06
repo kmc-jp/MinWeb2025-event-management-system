@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getApiClient, handleApiError } from '../../../../lib/api';
-import { EventDetails, EventDetailsStatusEnum, EventParticipant, JoinEventRequest } from '../../../../generated';
+import { EventDetails, EventDetailsStatusEnum, EventParticipant, JoinEventRequest, User } from '../../../../generated';
 
 export default function EventDetailPage() {
   const params = useParams();
@@ -15,12 +15,7 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
-  const [currentUser, setCurrentUser] = useState<{
-    user_id: string;
-    name: string;
-    roles: string[];
-    generation: number;
-  } | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>('');
 
   useEffect(() => {
@@ -94,7 +89,6 @@ export default function EventDetailPage() {
       // エラーが発生した場合でも、ダミーユーザー情報を設定
       const fallbackUser = {
         user_id: 'guest-user',
-        name: 'ゲストユーザー',
         roles: ['member'], // デフォルトでmemberロールを付与
         generation: 1
       };
@@ -529,7 +523,10 @@ export default function EventDetailPage() {
                   {participants.map((participant) => (
                     <div key={participant.user_id} className="flex items-center justify-between p-3 bg-kmc-gray-50 rounded-lg">
                       <div>
-                        <p className="font-medium text-kmc-gray-900">{participant.name}</p>
+                        <p className="font-medium text-kmc-gray-900">
+                          {/* {participant.name} // 削除 */}
+                          {participant.user_id}
+                        </p>
                         <p className="text-sm text-kmc-gray-600">{participant.generation}期</p>
                       </div>
                       <div className="flex items-center space-x-2">

@@ -73,6 +73,13 @@ var routes = Routes{
 	},
 
 	{
+		"ConfirmEventSchedule",
+		http.MethodPost,
+		"/api/events/:id/confirm-schedule",
+		ConfirmEventSchedule,
+	},
+
+	{
 		"CreateEvent",
 		http.MethodPost,
 		"/api/events",

@@ -16,7 +16,6 @@ interface AuthContextType {
 // Mockユーザーの型定義
 interface MockUser {
   user_id: string;
-  name: string;
   roles: string[];
   generation: string;
   password: string;
@@ -24,16 +23,15 @@ interface MockUser {
 
 // Mockユーザーデータ
 const MOCK_USERS: MockUser[] = [
-  { user_id: 'admin1', name: '田中 健太', roles: ['admin'], generation: '45', password: 'password' },
-  { user_id: 'admin2', name: '佐藤 由美', roles: ['admin'], generation: '46', password: 'password' },
-  { user_id: 'member1', name: '鈴木 太郎', roles: ['member'], generation: '45', password: 'password' },
-  { user_id: 'member2', name: '高橋 花子', roles: ['member'], generation: '46', password: 'password' },
-  { user_id: 'member3', name: '伊藤 次郎', roles: ['member'], generation: '47', password: 'password' },
-  { user_id: 'member4', name: '渡辺 美咲', roles: ['member'], generation: '48', password: 'password' },
-  { user_id: 'member5', name: '山田 健太', roles: ['member'], generation: '49', password: 'password' },
-  { user_id: 'member6', name: '中村 愛子', roles: ['member'], generation: '50', password: 'password' },
-  { user_id: 'member7', name: '小林 大輔', roles: ['member'], generation: '45', password: 'password' },
-  { user_id: 'member8', name: '加藤 恵子', roles: ['member'], generation: '46', password: 'password' },
+  { user_id: 'admin-user-1', roles: ['admin', 'member'], generation: '24', password: 'password' },
+  { user_id: 'admin-user-2', roles: ['admin', 'member'], generation: '25', password: 'password' },
+  { user_id: 'member-user-1', roles: ['member'], generation: '26', password: 'password' },
+  { user_id: 'member-user-2', roles: ['member'], generation: '27', password: 'password' },
+  { user_id: 'member-user-3', roles: ['member'], generation: '28', password: 'password' },
+  { user_id: 'member-user-4', roles: ['member'], generation: '29', password: 'password' },
+  { user_id: 'member-user-5', roles: ['member'], generation: '30', password: 'password' },
+  { user_id: 'guest-user-1', roles: ['guest'], generation: '31', password: 'password' },
+  { user_id: 'guest-user-2', roles: ['guest'], generation: '32', password: 'password' },
 ];
 
 // 認証コンテキストの作成
@@ -53,12 +51,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (mockUserData) {
           try {
             const mockUser: MockUser = JSON.parse(mockUserData);
-            setUser({
+            const userData = {
               user_id: mockUser.user_id,
-              name: mockUser.name,
               roles: mockUser.roles,
               generation: parseInt(mockUser.generation, 10),
-            });
+            };
+            setUser(userData as User);
           } catch (error) {
             console.error('Mockユーザーデータの解析に失敗しました:', error);
             localStorage.removeItem('mockUser');

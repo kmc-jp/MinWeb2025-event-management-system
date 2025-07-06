@@ -39,9 +39,9 @@ func AuthMiddleware() gin.HandlerFunc {
 				}
 			} else {
 				// ヘッダーがない場合はデフォルトユーザーを設定
-				c.Set("user_id", "dummy-user-001")
+				c.Set("user_id", "member-user-1")
 				c.Set("user_roles", []string{"member"})
-				c.Set("user_generation", 1)
+				c.Set("user_generation", 26)
 			}
 		} else {
 			// 本番環境ではOpenID Connectなどの認証を使用

@@ -15,9 +15,6 @@ type User struct {
 	// ユーザーID
 	UserId string `json:"user_id"`
 
-	// ユーザー名
-	Name string `json:"name"`
-
 	// ユーザーの役割リスト
 	Roles []string `json:"roles"`
 

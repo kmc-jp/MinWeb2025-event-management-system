@@ -7,12 +7,17 @@ const getAuthHeaders = () => {
     // 開発環境: ローカルストレージから認証情報を取得
     const mockUserData = localStorage.getItem('mockUser');
     if (mockUserData) {
-      const mockUser = JSON.parse(mockUserData);
-      return {
-        'X-User-ID': mockUser.user_id,
-        'X-User-Roles': mockUser.roles.join(','),
-        'X-User-Generation': mockUser.generation.toString(),
-      };
+      try {
+        const mockUser = JSON.parse(mockUserData);
+        return {
+          'X-User-ID': mockUser.user_id,
+          'X-User-Roles': Array.isArray(mockUser.roles) ? mockUser.roles.join(',') : mockUser.roles,
+          'X-User-Generation': mockUser.generation.toString(),
+        };
+      } catch (error) {
+        console.error('Mockユーザーデータの解析に失敗しました:', error);
+        return {};
+      }
     }
   } else {
     // 本番環境: 実際の認証トークンやセッション情報を取得
@@ -64,7 +69,6 @@ class AuthenticatedApiClient extends DefaultApi {
         return {
           data: {
             user_id: mockUser.user_id,
-            name: mockUser.name,
             roles: mockUser.roles,
             generation: mockUser.generation,
           },

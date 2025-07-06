@@ -4,6 +4,7 @@ import (
 	"context"
 	"event-management-system/backend/internal/domain/model"
 	"event-management-system/backend/internal/domain/repository_interface"
+	"time"
 )
 
 // EventSummaryDTO はイベント一覧表示用のDTO
@@ -41,7 +42,6 @@ type EventDetailsDTO struct {
 // EventParticipantDTO はイベント参加者表示用のDTO
 type EventParticipantDTO struct {
 	UserID     string `json:"user_id"`
-	Name       string `json:"name"`
 	Generation int    `json:"generation"`
 	JoinedAt   string `json:"joined_at"`
 }
@@ -117,7 +117,7 @@ func (uc *EventQueryUsecase) ListEvents(ctx context.Context, query *ListEventsQu
 			Title:                     event.Title,
 			Status:                    event.Status,
 			Venue:                     event.Venue,
-			Organizer:                 event.Organizer.Name,
+			Organizer:                 event.Organizer.UserID,
 			AllowedParticipationRoles: event.AllowedParticipationRoles,
 			Tags:                      event.Tags,
 			ConfirmedDate:             confirmedDate,
@@ -145,7 +145,6 @@ func (uc *EventQueryUsecase) GetEventParticipants(ctx context.Context, eventID s
 	for i, participant := range participants {
 		dtos[i] = EventParticipantDTO{
 			UserID:     participant.UserID,
-			Name:       participant.Name,
 			Generation: participant.Generation,
 			JoinedAt:   participant.JoinedAt.Format("2006-01-02T15:04:05Z"),
 		}
@@ -185,7 +184,7 @@ func (uc *EventQueryUsecase) GetEventDetails(ctx context.Context, eventID string
 		FeeSettings:               event.FeeSettings,
 		ConfirmedDate:             confirmedDate,
 		ScheduleDeadline:          scheduleDeadline,
-		Organizer:                 event.Organizer.Name,
+		Organizer:                 event.Organizer.UserID,
 		CreatedAt:                 event.CreatedAt.Format("2006-01-02T15:04:05Z"),
 		UpdatedAt:                 event.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 	}, nil
@@ -244,6 +243,30 @@ func (uc *EventQueryUsecase) filterEvents(events []*model.Event, statusFilter *m
 				}
 				if !hasJoinableRole {
 					continue
+				}
+
+				// イベントステータスのチェック（終了済み、キャンセル済みは参加不可）
+				if event.Status == model.EventStatusFinished || event.Status == model.EventStatusCancelled {
+					continue
+				}
+
+				// 日程のチェック（過去のイベントは参加不可）
+				if event.ConfirmedDate != nil {
+					now := time.Now()
+					if event.ConfirmedDate.Before(now) {
+						continue
+					}
+				}
+
+				// 既に参加済みかチェック（参加済みの場合はjoinableに含めない）
+				participants, err := uc.EventRepo.GetEventParticipants(context.Background(), event.EventID)
+				if err != nil {
+					continue
+				}
+				for _, participant := range participants {
+					if participant.UserID == userID {
+						continue // 既に参加済みの場合はスキップ
+					}
 				}
 			} else if participationFilter == "joined" {
 				// 参加済みかチェック

@@ -281,12 +281,6 @@ export interface EventParticipant {
      */
     'user_id': string;
     /**
-     * ユーザー名
-     * @type {string}
-     * @memberof EventParticipant
-     */
-    'name': string;
-    /**
      * 世代（1-100の範囲）
      * @type {number}
      * @memberof EventParticipant
@@ -298,9 +292,21 @@ export interface EventParticipant {
      * @memberof EventParticipant
      */
     'joined_at': string;
+    /**
+     * 参加ステータス
+     * @type {string}
+     * @memberof EventParticipant
+     */
+    'status': EventParticipantStatusEnum;
 }
 
+export const EventParticipantStatusEnum = {
+    Pending: 'PENDING',
+    Confirmed: 'CONFIRMED',
+    Cancelled: 'CANCELLED'
+} as const;
 
+export type EventParticipantStatusEnum = typeof EventParticipantStatusEnum[keyof typeof EventParticipantStatusEnum];
 
 /**
  * 
@@ -695,12 +701,6 @@ export interface User {
      */
     'user_id': string;
     /**
-     * ユーザー名
-     * @type {string}
-     * @memberof User
-     */
-    'name': string;
-    /**
      * ユーザーの役割リスト
      * @type {Array<string>}
      * @memberof User
@@ -725,12 +725,6 @@ export interface UserSummary {
      * @memberof UserSummary
      */
     'user_id': string;
-    /**
-     * ユーザー名
-     * @type {string}
-     * @memberof UserSummary
-     */
-    'name': string;
     /**
      * 世代（1-100の範囲）
      * @type {number}

@@ -4,6 +4,7 @@ go.mod
 go/README.md
 go/api_default.go
 go/model_assign_role_request.go
+go/model_confirm_event_schedule_request.go
 go/model_create_event_request.go
 go/model_create_event_response.go
 go/model_create_role_request.go

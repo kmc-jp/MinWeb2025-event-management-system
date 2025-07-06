@@ -9,7 +9,6 @@ import (
 // UserDTO はユーザー表示用のDTO
 type UserDTO struct {
 	UserID     string           `json:"user_id"`
-	Name       string           `json:"name"`
 	Roles      []model.UserRole `json:"roles"`
 	Generation int              `json:"generation"`
 }
@@ -33,7 +32,6 @@ func (uc *UserQueryUsecase) GetUser(ctx context.Context, userID string) (*UserDT
 
 	return &UserDTO{
 		UserID:     user.UserID,
-		Name:       user.Name,
 		Roles:      user.Roles,
 		Generation: user.Generation,
 	}, nil
@@ -69,7 +67,6 @@ func (uc *UserQueryUsecase) ListUsers(ctx context.Context, role string, generati
 
 		filteredUsers = append(filteredUsers, &UserSummaryDTO{
 			UserID:     user.UserID,
-			Name:       user.Name,
 			Generation: user.Generation,
 		})
 	}

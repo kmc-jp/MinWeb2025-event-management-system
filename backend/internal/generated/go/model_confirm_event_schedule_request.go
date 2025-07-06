@@ -10,11 +10,12 @@
 
 package generated
 
-type UserSummary struct {
+import (
+	"time"
+)
 
-	// ユーザーID
-	UserId string `json:"user_id"`
+type ConfirmEventScheduleRequest struct {
 
-	// 世代（1-100の範囲）
-	Generation int32 `json:"generation"`
+	// 確定する日程
+	ConfirmedDate time.Time `json:"confirmed_date"`
 }
