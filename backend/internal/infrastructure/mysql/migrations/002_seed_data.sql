@@ -4,6 +4,10 @@
 -- マイグレーション実行履歴を記録
 INSERT IGNORE INTO migration_history (migration_file) VALUES ('002_seed_data.sql');
 
+-- システムユーザーの作成（外部キー制約のため）
+INSERT INTO users (user_id, name, generation, created_at) VALUES
+('system', 'システム', 1, NOW());
+
 -- 役割データの投入
 INSERT INTO roles (name, description, created_at, created_by) VALUES
 ('admin', 'システム管理者 - すべての機能にアクセス可能', NOW(), 'system'),
@@ -36,20 +40,20 @@ INSERT INTO users (user_id, name, generation, created_at) VALUES
 
 -- ユーザーと役割の関連付け
 -- 認証用ダミーユーザーは部員ロールを持つ
-INSERT INTO user_roles (user_id, role_name, created_at) VALUES
+INSERT INTO user_roles (user_id, role, created_at) VALUES
 ('auth-dummy-user-1', 'member', NOW()),
 ('auth-dummy-user-2', 'member', NOW()),
 ('auth-dummy-user-3', 'member', NOW());
 
 -- 管理者ユーザーは管理者ロールと部員ロールの両方を持つ
-INSERT INTO user_roles (user_id, role_name, created_at) VALUES
+INSERT INTO user_roles (user_id, role, created_at) VALUES
 ('admin-user-1', 'admin', NOW()),
 ('admin-user-1', 'member', NOW()),
 ('admin-user-2', 'admin', NOW()),
 ('admin-user-2', 'member', NOW());
 
 -- 一般部員ユーザーは部員ロールを持つ
-INSERT INTO user_roles (user_id, role_name, created_at) VALUES
+INSERT INTO user_roles (user_id, role, created_at) VALUES
 ('member-user-1', 'member', NOW()),
 ('member-user-2', 'member', NOW()),
 ('member-user-3', 'member', NOW()),
@@ -57,7 +61,7 @@ INSERT INTO user_roles (user_id, role_name, created_at) VALUES
 ('member-user-5', 'member', NOW());
 
 -- ゲストユーザーはゲストロールを持つ
-INSERT INTO user_roles (user_id, role_name, created_at) VALUES
+INSERT INTO user_roles (user_id, role, created_at) VALUES
 ('guest-user-1', 'guest', NOW()),
 ('guest-user-2', 'guest', NOW());
 
@@ -101,12 +105,12 @@ INSERT INTO event_edit_roles (event_id, role_name, created_at) VALUES
 ('sample-event-3', 'admin', NOW());
 
 -- サンプル参加者の投入
-INSERT INTO event_participants (event_id, user_id, status, joined_at) VALUES
-('sample-event-1', 'member-user-1', 'CONFIRMED', NOW()),
-('sample-event-1', 'member-user-2', 'PENDING', NOW()),
-('sample-event-2', 'member-user-3', 'CONFIRMED', NOW()),
-('sample-event-2', 'member-user-4', 'CONFIRMED', NOW()),
-('sample-event-3', 'member-user-5', 'PENDING', NOW());
+INSERT INTO event_participants (event_id, user_id, name, generation, status, joined_at) VALUES
+('sample-event-1', 'member-user-1', '部員ユーザー1', 26, 'CONFIRMED', NOW()),
+('sample-event-1', 'member-user-2', '部員ユーザー2', 27, 'PENDING', NOW()),
+('sample-event-2', 'member-user-3', '部員ユーザー3', 28, 'CONFIRMED', NOW()),
+('sample-event-2', 'member-user-4', '部員ユーザー4', 29, 'CONFIRMED', NOW()),
+('sample-event-3', 'member-user-5', '部員ユーザー5', 30, 'PENDING', NOW());
 
 -- サンプル料金設定の投入
 INSERT INTO fee_settings (event_id, applicable_generation, amount, currency, created_at) VALUES

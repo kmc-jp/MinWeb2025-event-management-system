@@ -15,7 +15,8 @@ services:
     volumes:
       - db_data:/var/lib/mysql
       - ./backend/internal/infrastructure/mysql/init.sql:/docker-entrypoint-initdb.d/00-init.sql
-      - ./backend/internal/infrastructure/mysql/migrations:/docker-entrypoint-initdb.d
+      - ./backend/internal/infrastructure/mysql/migrations/001_initial_schema.sql:/docker-entrypoint-initdb.d/01-initial-schema.sql
+      - ./backend/internal/infrastructure/mysql/migrations/002_seed_data.sql:/docker-entrypoint-initdb.d/02-seed-data.sql
       - ./backend/internal/infrastructure/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     healthcheck:

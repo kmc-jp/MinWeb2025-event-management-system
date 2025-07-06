@@ -25,7 +25,7 @@ func (r *MySQLRoleRepository) FindByName(ctx context.Context, name string) (*mod
 	row := r.db.QueryRowContext(ctx, query, name)
 
 	var role model.Role
-	var allowedAssignersJSON string
+	var allowedAssignersJSON sql.NullString
 
 	err := row.Scan(&role.Name, &role.Description, &role.CreatedAt, &role.CreatedBy, &allowedAssignersJSON)
 	if err != nil {
@@ -36,8 +36,12 @@ func (r *MySQLRoleRepository) FindByName(ctx context.Context, name string) (*mod
 	}
 
 	// JSONからallowed_assignersを復元
-	if err := json.Unmarshal([]byte(allowedAssignersJSON), &role.AllowedAssigners); err != nil {
-		return nil, err
+	if allowedAssignersJSON.Valid && allowedAssignersJSON.String != "" {
+		if err := json.Unmarshal([]byte(allowedAssignersJSON.String), &role.AllowedAssigners); err != nil {
+			return nil, err
+		}
+	} else {
+		role.AllowedAssigners = []string{}
 	}
 
 	return &role, nil
@@ -56,15 +60,19 @@ func (r *MySQLRoleRepository) FindAll(ctx context.Context) ([]*model.Role, error
 	var roles []*model.Role
 	for rows.Next() {
 		var role model.Role
-		var allowedAssignersJSON string
+		var allowedAssignersJSON sql.NullString
 
 		if err := rows.Scan(&role.Name, &role.Description, &role.CreatedAt, &role.CreatedBy, &allowedAssignersJSON); err != nil {
 			return nil, err
 		}
 
 		// JSONからallowed_assignersを復元
-		if err := json.Unmarshal([]byte(allowedAssignersJSON), &role.AllowedAssigners); err != nil {
-			return nil, err
+		if allowedAssignersJSON.Valid && allowedAssignersJSON.String != "" {
+			if err := json.Unmarshal([]byte(allowedAssignersJSON.String), &role.AllowedAssigners); err != nil {
+				return nil, err
+			}
+		} else {
+			role.AllowedAssigners = []string{}
 		}
 
 		roles = append(roles, &role)

@@ -15,8 +15,13 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [currentUserId] = useState('dummy-user-001'); // 開発用：実際の認証システムから取得
+  const [currentUser, setCurrentUser] = useState<{
+    user_id: string;
+    name: string;
+    roles: string[];
+    generation: number;
+  } | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
 
   useEffect(() => {
     fetchEventDetails();
@@ -83,17 +88,19 @@ export default function EventDetailPage() {
       const response = await apiClient.getCurrentUser();
       console.log('ユーザー情報取得成功:', response.data);
       setCurrentUser(response.data);
+      setCurrentUserId(response.data.user_id);
     } catch (error) {
       console.error('ユーザー情報取得エラー:', error);
       // エラーが発生した場合でも、ダミーユーザー情報を設定
       const fallbackUser = {
-        user_id: currentUserId,
+        user_id: 'guest-user',
         name: 'ゲストユーザー',
         roles: ['member'], // デフォルトでmemberロールを付与
         generation: 1
       };
       console.log('フォールバックユーザー情報を設定:', fallbackUser);
       setCurrentUser(fallbackUser);
+      setCurrentUserId('guest-user');
     }
   };
 
@@ -484,7 +491,7 @@ export default function EventDetailPage() {
                           )}
                         </div>
                         <span className="font-medium">
-                          {formatMoney(feeSetting.fee.amount, feeSetting.fee.currency)}
+                          {feeSetting.fee ? formatMoney(feeSetting.fee.amount, feeSetting.fee.currency) : '無料'}
                         </span>
                       </div>
                     ))}

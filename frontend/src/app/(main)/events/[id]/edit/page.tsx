@@ -251,7 +251,7 @@ export default function EditEventPage() {
                     役割を選択
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {userRoles.map((role) => (
+                    {userRoles?.map((role) => (
                       <button
                         key={role}
                         type="button"
@@ -272,7 +272,7 @@ export default function EditEventPage() {
                       >
                         {role}
                       </button>
-                    ))}
+                    )) || <p className="text-kmc-gray-500">役割を読み込み中...</p>}
                   </div>
                 </div>
                 
@@ -316,7 +316,7 @@ export default function EditEventPage() {
                     役割を選択
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {userRoles.map((role) => (
+                    {userRoles?.map((role) => (
                       <button
                         key={role}
                         type="button"
@@ -337,7 +337,7 @@ export default function EditEventPage() {
                       >
                         {role}
                       </button>
-                    ))}
+                    )) || <p className="text-kmc-gray-500">役割を読み込み中...</p>}
                   </div>
                 </div>
                 
@@ -376,7 +376,7 @@ export default function EditEventPage() {
             <div className="mb-8">
               <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">タグ</h2>
               <div className="space-y-4">
-                {tags.length > 0 && (
+                {tags && tags.length > 0 && (
                   <div className="mb-3">
                     <label className="block text-sm font-medium text-kmc-gray-600 mb-2">
                       既存のタグから選択
@@ -495,8 +495,11 @@ export default function EditEventPage() {
                           </label>
                           <input
                             type="number"
-                            value={feeSetting.fee.amount}
-                            onChange={(e) => updateFeeSetting(index, 'fee', { ...feeSetting.fee, amount: Number(e.target.value) })}
+                            value={feeSetting.fee?.amount || 0}
+                            onChange={(e) => updateFeeSetting(index, 'fee', { 
+                              amount: Number(e.target.value),
+                              currency: feeSetting.fee?.currency || 'JPY'
+                            })}
                             className="input-field w-full"
                             placeholder="0"
                           />
@@ -507,8 +510,11 @@ export default function EditEventPage() {
                             通貨
                           </label>
                           <select
-                            value={feeSetting.fee.currency}
-                            onChange={(e) => updateFeeSetting(index, 'fee', { ...feeSetting.fee, currency: e.target.value })}
+                            value={feeSetting.fee?.currency || 'JPY'}
+                            onChange={(e) => updateFeeSetting(index, 'fee', { 
+                              amount: feeSetting.fee?.amount || 0,
+                              currency: e.target.value 
+                            })}
                             className="input-field w-full"
                           >
                             <option value="JPY">JPY</option>

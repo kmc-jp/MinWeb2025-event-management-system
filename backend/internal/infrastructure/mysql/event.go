@@ -814,7 +814,7 @@ func (r *MySQLEventRepository) saveAllowedEditRolesWithTx(ctx context.Context, t
 func (r *MySQLEventRepository) loadEventRelations(ctx context.Context, event *model.Event) error {
 	// 主催者の役割を取得
 	if event.Organizer != nil {
-		rows, err := r.db.QueryContext(ctx, "SELECT role_name FROM user_roles WHERE user_id = ?", event.Organizer.UserID)
+		rows, err := r.db.QueryContext(ctx, "SELECT role FROM user_roles WHERE user_id = ?", event.Organizer.UserID)
 		if err != nil {
 			return err
 		}

@@ -21,6 +21,7 @@ CREATE TABLE roles (
     description VARCHAR(200) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by VARCHAR(255) NOT NULL,
+    allowed_assigners JSON,
     INDEX idx_created_at (created_at),
     FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -28,13 +29,13 @@ CREATE TABLE roles (
 -- ユーザー役割関連テーブル
 CREATE TABLE user_roles (
     user_id VARCHAR(255) NOT NULL,
-    role_name VARCHAR(50) NOT NULL,
+    role VARCHAR(50) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, role_name),
+    PRIMARY KEY (user_id, role),
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-    FOREIGN KEY (role_name) REFERENCES roles(name) ON DELETE CASCADE,
+    FOREIGN KEY (role) REFERENCES roles(name) ON DELETE CASCADE,
     INDEX idx_user_id (user_id),
-    INDEX idx_role_name (role_name)
+    INDEX idx_role (role)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- タグテーブル
@@ -71,6 +72,8 @@ CREATE TABLE events (
 CREATE TABLE event_participants (
     event_id VARCHAR(36) NOT NULL,
     user_id VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    generation INT NOT NULL,
     status ENUM('PENDING', 'CONFIRMED', 'CANCELLED') NOT NULL DEFAULT 'PENDING',
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (event_id, user_id),
@@ -130,4 +133,14 @@ CREATE TABLE event_edit_roles (
     FOREIGN KEY (role_name) REFERENCES roles(name) ON DELETE CASCADE,
     INDEX idx_event_id (event_id),
     INDEX idx_role_name (role_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- イベント日程調整テーブル
+CREATE TABLE event_schedule_polls (
+    event_id VARCHAR(36) NOT NULL PRIMARY KEY,
+    poll_data JSON NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (event_id) REFERENCES events(event_id) ON DELETE CASCADE,
+    INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 

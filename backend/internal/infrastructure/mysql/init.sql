@@ -11,4 +11,7 @@ CREATE TABLE IF NOT EXISTS migration_history (
     migration_file VARCHAR(255) NOT NULL,
     executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY unique_migration (migration_file)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 初期化完了のログ
+SELECT 'Database initialization completed' as status; 

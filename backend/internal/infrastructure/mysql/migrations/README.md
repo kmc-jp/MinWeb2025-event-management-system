@@ -72,3 +72,35 @@ source /path/to/002_seed_data.sql;
 - マイグレーションファイルは一度だけ実行してください
 - 本番環境で実行する前に、必ずバックアップを取得してください
 - 外部キー制約により、データの整合性が保たれます
+
+## 修正履歴
+
+### 最新の修正内容
+
+1. **EventParticipant モデルの修正**
+
+   - `EventParticipantStatus`型を追加
+   - `EventParticipant`構造体に`Status`フィールドを追加
+   - データベース操作で status フィールドを適切に処理
+
+2. **テーブル名の統一**
+
+   - `event_allowed_roles` → `event_participation_roles`
+   - `event_editable_roles` → `event_edit_roles`
+   - `event_fee_settings` → `fee_settings`
+
+3. **カラム名の統一**
+
+   - `role_name` → `role` (user_roles)
+   - `tag` → `tag_name` (event_tags)
+   - `fee_amount` → `amount` (fee_settings)
+   - `fee_currency` → `currency` (fee_settings)
+
+4. **不足していたテーブルの追加**
+
+   - `event_schedule_polls`テーブルを追加
+   - `roles`テーブルに`allowed_assigners`カラムを追加
+
+5. **外部キー制約の問題を解決**
+   - `system`ユーザーを作成して外部キー制約を満たす
+   - `event_participants`テーブルに`name`と`generation`カラムを追加

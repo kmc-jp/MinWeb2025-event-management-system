@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getApiClient, handleApiError } from '../../../../lib/api';
-import { CreateEventRequest, FeeSetting, Money, Role } from '../../../../generated/api';
+import { CreateEventRequest, FeeSetting, Money, Role, Tag } from '../../../../generated/api';
 
 // 日程設定を含む拡張されたCreateEventRequest型
 interface ExtendedCreateEventRequest extends Omit<CreateEventRequest, 'allowed_users' | 'allowed_participation_roles' | 'allowed_edit_roles'> {
@@ -37,7 +37,7 @@ export default function CreateEventPage() {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tags, setTags] = useState<any[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [newTag, setNewTag] = useState('');
   const [newPollCandidate, setNewPollCandidate] = useState('');
@@ -49,7 +49,8 @@ export default function CreateEventPage() {
 
   const loadTags = async () => {
     try {
-      const response = await (getApiClient() as any).listTags();
+      const response = await getApiClient().listTags();
+      console.log('Tags loaded:', response.data);
       setTags(response.data);
     } catch (err) {
       console.error('Failed to load tags:', err);
@@ -58,7 +59,8 @@ export default function CreateEventPage() {
 
   const loadRoles = async () => {
     try {
-      const response = await (getApiClient() as any).listRoles();
+      const response = await getApiClient().listRoles();
+      console.log('Roles loaded:', response.data);
       setRoles(response.data);
     } catch (err) {
       console.error('Failed to load roles:', err);
@@ -86,7 +88,7 @@ export default function CreateEventPage() {
     if (newTag.trim() && !formData.tags?.includes(newTag.trim())) {
       try {
         // 新しいタグを作成
-        await (getApiClient() as any).createTag({ name: newTag.trim() });
+        await getApiClient().createTag({ name: newTag.trim() });
         // タグ一覧を再読み込み
         await loadTags();
         // フォームに追加
@@ -297,7 +299,7 @@ export default function CreateEventPage() {
                     役割を選択
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {roles.map((role) => (
+                    {roles?.map((role) => (
                       <button
                         key={role.name}
                         type="button"
@@ -318,7 +320,7 @@ export default function CreateEventPage() {
                       >
                         {role.name}
                       </button>
-                    ))}
+                    )) || <p className="text-kmc-gray-500">役割を読み込み中...</p>}
                   </div>
                 </div>
                 
@@ -368,7 +370,7 @@ export default function CreateEventPage() {
                     役割を選択
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {roles.map((role) => (
+                    {roles?.map((role) => (
                       <button
                         key={role.name}
                         type="button"
@@ -389,7 +391,7 @@ export default function CreateEventPage() {
                       >
                         {role.name}
                       </button>
-                    ))}
+                    )) || <p className="text-kmc-gray-500">役割を読み込み中...</p>}
                   </div>
                 </div>
                 
@@ -508,7 +510,7 @@ export default function CreateEventPage() {
               <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">タグ</h2>
               <div className="space-y-4">
                 {/* 既存タグの選択 */}
-                {tags.length > 0 && (
+                {tags && tags.length > 0 && (
                   <div className="mb-3">
                     <label className="block text-sm font-medium text-kmc-gray-600 mb-2">
                       既存のタグから選択
@@ -695,8 +697,11 @@ export default function CreateEventPage() {
                           </label>
                           <input
                             type="number"
-                            value={feeSetting.fee.amount}
-                            onChange={(e) => updateFeeSetting(index, 'fee', { ...feeSetting.fee, amount: parseInt(e.target.value) || 0 })}
+                            value={feeSetting.fee?.amount || 0}
+                            onChange={(e) => updateFeeSetting(index, 'fee', { 
+                              amount: parseInt(e.target.value) || 0,
+                              currency: feeSetting.fee?.currency || 'JPY'
+                            })}
                             className="input-field w-full"
                             min="0"
                           />
