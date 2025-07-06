@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"event-management-system/backend/internal/domain/model"
 	"event-management-system/backend/internal/domain/repository_interface"
@@ -50,26 +51,37 @@ func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) err
 		}
 	}()
 
-	// editable_rolesをJSONに変換
-	editableRolesJSON, err := json.Marshal(event.AllowedEditRoles)
-	if err != nil {
-		return fmt.Errorf("failed to marshal editable_roles: %w", err)
-	}
-
 	// イベント基本情報を保存
 	query := `
-		INSERT INTO events (event_id, title, description, status, venue, organizer_id, editable_roles, confirmed_date, schedule_deadline, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO events (event_id, title, description, status, venue, organizer_name, poll_type, poll_candidates, confirmed_date, schedule_deadline, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON DUPLICATE KEY UPDATE
 		title = VALUES(title),
 		description = VALUES(description),
 		status = VALUES(status),
 		venue = VALUES(venue),
-		editable_roles = VALUES(editable_roles),
+		organizer_name = VALUES(organizer_name),
+		poll_type = VALUES(poll_type),
+		poll_candidates = VALUES(poll_candidates),
 		confirmed_date = VALUES(confirmed_date),
 		schedule_deadline = VALUES(schedule_deadline),
 		updated_at = VALUES(updated_at)
 	`
+
+	// poll_candidatesをJSONに変換
+	var pollCandidatesJSON []byte
+	if event.SchedulePoll != nil && len(event.SchedulePoll.CandidateDates) > 0 {
+		// time.TimeをMySQL形式の文字列に変換
+		dateStrings := make([]string, len(event.SchedulePoll.CandidateDates))
+		for i, date := range event.SchedulePoll.CandidateDates {
+			dateStrings[i] = date.Format("2006-01-02 15:04:05")
+		}
+
+		pollCandidatesJSON, err = json.Marshal(dateStrings)
+		if err != nil {
+			return fmt.Errorf("failed to marshal poll_candidates: %w", err)
+		}
+	}
 
 	_, err = tx.ExecContext(ctx, query,
 		event.EventID,
@@ -77,8 +89,9 @@ func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) err
 		event.Description,
 		string(event.Status),
 		event.Venue,
-		event.Organizer.UserID,
-		editableRolesJSON,
+		event.Organizer.Name,
+		event.SchedulePoll.PollType,
+		pollCandidatesJSON,
 		event.ConfirmedDate,
 		event.ScheduleDeadline,
 		event.CreatedAt,
@@ -108,7 +121,7 @@ func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) err
 		return err
 	}
 
-	// 日程調整情報を保存
+	// 日程調整情報を保存（event_schedule_pollsテーブルに保存）
 	if event.SchedulePoll != nil {
 		if err := r.saveSchedulePollWithTx(ctx, tx, event.EventID, event.SchedulePoll); err != nil {
 			return err
@@ -131,19 +144,19 @@ func (r *MySQLEventRepository) Save(ctx context.Context, event *model.Event) err
 // FindByID は指定されたIDのイベントを取得します
 func (r *MySQLEventRepository) FindByID(ctx context.Context, id string) (*model.Event, error) {
 	query := `
-		SELECT e.event_id, e.title, e.description, e.status, e.venue, e.editable_roles, e.confirmed_date, e.schedule_deadline, e.created_at, e.updated_at,
-		       u.user_id, u.name, u.generation
+		SELECT e.event_id, e.title, e.description, e.status, e.venue, e.poll_type, e.poll_candidates, e.confirmed_date, e.schedule_deadline, e.created_at, e.updated_at,
+		       e.organizer_name
 		FROM events e
-		JOIN users u ON e.organizer_id = u.user_id
 		WHERE e.event_id = ?
 	`
 
 	row := r.db.QueryRowContext(ctx, query, id)
 
 	var event model.Event
-	var organizer model.User
+	var organizerName string
 	var statusStr string
-	var editableRolesJSON []byte
+	var pollType sql.NullString
+	var pollCandidatesJSON []byte
 
 	err := row.Scan(
 		&event.EventID,
@@ -151,14 +164,13 @@ func (r *MySQLEventRepository) FindByID(ctx context.Context, id string) (*model.
 		&event.Description,
 		&statusStr,
 		&event.Venue,
-		&editableRolesJSON,
+		&pollType,
+		&pollCandidatesJSON,
 		&event.ConfirmedDate,
 		&event.ScheduleDeadline,
 		&event.CreatedAt,
 		&event.UpdatedAt,
-		&organizer.UserID,
-		&organizer.Name,
-		&organizer.Generation,
+		&organizerName,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -167,13 +179,39 @@ func (r *MySQLEventRepository) FindByID(ctx context.Context, id string) (*model.
 		return nil, err
 	}
 
-	// editable_rolesをJSONから復元
-	if err := json.Unmarshal(editableRolesJSON, &event.AllowedEditRoles); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal editable_roles: %w", err)
+	// SchedulePollの基本情報を設定（詳細はloadEventRelationsで取得）
+	if pollType.Valid {
+		event.SchedulePoll = &model.SchedulePoll{
+			PollType:       pollType.String,
+			CandidateDates: []time.Time{},
+			Responses:      make(map[string][]time.Time),
+		}
+
+		// poll_candidatesをJSONから復元
+		if len(pollCandidatesJSON) > 0 {
+			// まず文字列の配列としてパース
+			var dateStrings []string
+			if err := json.Unmarshal(pollCandidatesJSON, &dateStrings); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal poll_candidates as string array: %w", err)
+			}
+
+			// 各日時文字列をtime.Timeに変換
+			event.SchedulePoll.CandidateDates = make([]time.Time, len(dateStrings))
+			for i, dateStr := range dateStrings {
+				// MySQL形式（YYYY-MM-DD HH:MM:SS）をパース
+				date, err := time.Parse("2006-01-02 15:04:05", dateStr)
+				if err != nil {
+					return nil, fmt.Errorf("failed to parse candidate date %s: %w", dateStr, err)
+				}
+				event.SchedulePoll.CandidateDates[i] = date
+			}
+		}
 	}
 
 	event.Status = model.EventStatus(statusStr)
-	event.Organizer = &organizer
+	event.Organizer = &model.User{
+		Name: organizerName,
+	}
 
 	// 関連データを取得
 	if err := r.loadEventRelations(ctx, &event); err != nil {
@@ -186,10 +224,9 @@ func (r *MySQLEventRepository) FindByID(ctx context.Context, id string) (*model.
 // FindAll は全てのイベントを取得します
 func (r *MySQLEventRepository) FindAll(ctx context.Context) ([]*model.Event, error) {
 	query := `
-		SELECT e.event_id, e.title, e.description, e.status, e.venue, e.editable_roles, e.confirmed_date, e.schedule_deadline, e.created_at, e.updated_at,
-		       u.user_id, u.name, u.generation
+		SELECT e.event_id, e.title, e.description, e.status, e.venue, e.poll_type, e.poll_candidates, e.confirmed_date, e.schedule_deadline, e.created_at, e.updated_at,
+		       e.organizer_name
 		FROM events e
-		JOIN users u ON e.organizer_id = u.user_id
 		ORDER BY e.created_at DESC
 	`
 
@@ -202,9 +239,10 @@ func (r *MySQLEventRepository) FindAll(ctx context.Context) ([]*model.Event, err
 	var events []*model.Event
 	for rows.Next() {
 		var event model.Event
-		var organizer model.User
+		var organizerName string
 		var statusStr string
-		var editableRolesJSON []byte
+		var pollType sql.NullString
+		var pollCandidatesJSON []byte
 
 		err := rows.Scan(
 			&event.EventID,
@@ -212,26 +250,51 @@ func (r *MySQLEventRepository) FindAll(ctx context.Context) ([]*model.Event, err
 			&event.Description,
 			&statusStr,
 			&event.Venue,
-			&editableRolesJSON,
+			&pollType,
+			&pollCandidatesJSON,
 			&event.ConfirmedDate,
 			&event.ScheduleDeadline,
 			&event.CreatedAt,
 			&event.UpdatedAt,
-			&organizer.UserID,
-			&organizer.Name,
-			&organizer.Generation,
+			&organizerName,
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		// editable_rolesをJSONから復元
-		if err := json.Unmarshal(editableRolesJSON, &event.AllowedEditRoles); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal editable_roles: %w", err)
+		// SchedulePollを初期化
+		if pollType.Valid {
+			event.SchedulePoll = &model.SchedulePoll{
+				PollType:       pollType.String,
+				CandidateDates: []time.Time{},
+				Responses:      make(map[string][]time.Time),
+			}
+
+			// poll_candidatesをJSONから復元
+			if len(pollCandidatesJSON) > 0 {
+				// まず文字列の配列としてパース
+				var dateStrings []string
+				if err := json.Unmarshal(pollCandidatesJSON, &dateStrings); err != nil {
+					return nil, fmt.Errorf("failed to unmarshal poll_candidates as string array: %w", err)
+				}
+
+				// 各日時文字列をtime.Timeに変換
+				event.SchedulePoll.CandidateDates = make([]time.Time, len(dateStrings))
+				for i, dateStr := range dateStrings {
+					// MySQL形式（YYYY-MM-DD HH:MM:SS）をパース
+					date, err := time.Parse("2006-01-02 15:04:05", dateStr)
+					if err != nil {
+						return nil, fmt.Errorf("failed to parse candidate date %s: %w", dateStr, err)
+					}
+					event.SchedulePoll.CandidateDates[i] = date
+				}
+			}
 		}
 
 		event.Status = model.EventStatus(statusStr)
-		event.Organizer = &organizer
+		event.Organizer = &model.User{
+			Name: organizerName,
+		}
 
 		// 関連データを取得
 		if err := r.loadEventRelations(ctx, &event); err != nil {
@@ -247,10 +310,9 @@ func (r *MySQLEventRepository) FindAll(ctx context.Context) ([]*model.Event, err
 // FindByStatus は指定されたステータスのイベントを取得します
 func (r *MySQLEventRepository) FindByStatus(ctx context.Context, status model.EventStatus) ([]*model.Event, error) {
 	query := `
-		SELECT e.event_id, e.title, e.description, e.status, e.venue, e.created_at, e.updated_at,
-		       u.user_id, u.name, u.role, u.generation
+		SELECT e.event_id, e.title, e.description, e.status, e.venue, e.poll_type, e.poll_candidates, e.confirmed_date, e.schedule_deadline, e.created_at, e.updated_at,
+		       e.organizer_name
 		FROM events e
-		JOIN users u ON e.organizer_id = u.user_id
 		WHERE e.status = ?
 		ORDER BY e.created_at DESC
 	`
@@ -264,8 +326,10 @@ func (r *MySQLEventRepository) FindByStatus(ctx context.Context, status model.Ev
 	var events []*model.Event
 	for rows.Next() {
 		var event model.Event
-		var organizer model.User
+		var organizerName string
 		var statusStr string
+		var pollType sql.NullString
+		var pollCandidatesJSON []byte
 
 		err := rows.Scan(
 			&event.EventID,
@@ -273,18 +337,51 @@ func (r *MySQLEventRepository) FindByStatus(ctx context.Context, status model.Ev
 			&event.Description,
 			&statusStr,
 			&event.Venue,
+			&pollType,
+			&pollCandidatesJSON,
+			&event.ConfirmedDate,
+			&event.ScheduleDeadline,
 			&event.CreatedAt,
 			&event.UpdatedAt,
-			&organizer.UserID,
-			&organizer.Name,
-			&organizer.Generation,
+			&organizerName,
 		)
 		if err != nil {
 			return nil, err
 		}
 
+		// SchedulePollを初期化
+		if pollType.Valid {
+			event.SchedulePoll = &model.SchedulePoll{
+				PollType:       pollType.String,
+				CandidateDates: []time.Time{},
+				Responses:      make(map[string][]time.Time),
+			}
+
+			// poll_candidatesをJSONから復元
+			if len(pollCandidatesJSON) > 0 {
+				// まず文字列の配列としてパース
+				var dateStrings []string
+				if err := json.Unmarshal(pollCandidatesJSON, &dateStrings); err != nil {
+					return nil, fmt.Errorf("failed to unmarshal poll_candidates as string array: %w", err)
+				}
+
+				// 各日時文字列をtime.Timeに変換
+				event.SchedulePoll.CandidateDates = make([]time.Time, len(dateStrings))
+				for i, dateStr := range dateStrings {
+					// MySQL形式（YYYY-MM-DD HH:MM:SS）をパース
+					date, err := time.Parse("2006-01-02 15:04:05", dateStr)
+					if err != nil {
+						return nil, fmt.Errorf("failed to parse candidate date %s: %w", dateStr, err)
+					}
+					event.SchedulePoll.CandidateDates[i] = date
+				}
+			}
+		}
+
 		event.Status = model.EventStatus(statusStr)
-		event.Organizer = &organizer
+		event.Organizer = &model.User{
+			Name: organizerName,
+		}
 
 		// 関連データを取得
 		if err := r.loadEventRelations(ctx, &event); err != nil {
@@ -313,11 +410,10 @@ func (r *MySQLEventRepository) Delete(ctx context.Context, id string) error {
 	// 関連テーブルのデータを削除
 	tables := []string{
 		"event_participants",
-		"event_allowed_roles",
-		"event_editable_roles",
+		"event_participation_roles",
+		"event_edit_roles",
 		"event_tags",
-		"event_fee_settings",
-		"event_schedule_polls",
+		"fee_settings",
 	}
 
 	for _, table := range tables {
@@ -372,7 +468,11 @@ func (r *MySQLEventRepository) GetEventParticipants(ctx context.Context, eventID
 			return nil, err
 		}
 
-		participant.Status = model.ParticipationStatus(statusStr)
+		participant.Status = model.EventParticipantStatus(statusStr)
+		if err != nil {
+			return nil, err
+		}
+
 		participants = append(participants, participant)
 	}
 
@@ -456,9 +556,9 @@ func (r *MySQLEventRepository) saveParticipants(ctx context.Context, eventID str
 	// 新しい参加者を追加
 	if len(participants) > 0 {
 		insertQuery := `
-			INSERT INTO event_participants (event_id, user_id, name, generation, joined_at, status)
-			VALUES (?, ?, ?, ?, ?, ?)
-		`
+				INSERT INTO event_participants (event_id, user_id, name, generation, joined_at, status)
+				VALUES (?, ?, ?, ?, ?, ?)
+			`
 
 		for _, participant := range participants {
 			_, err := r.db.ExecContext(ctx, insertQuery,
@@ -489,9 +589,9 @@ func (r *MySQLEventRepository) saveParticipantsWithTx(ctx context.Context, tx *s
 	// 新しい参加者を追加
 	if len(participants) > 0 {
 		insertQuery := `
-			INSERT INTO event_participants (event_id, user_id, name, generation, joined_at, status)
-			VALUES (?, ?, ?, ?, ?, ?)
-		`
+				INSERT INTO event_participants (event_id, user_id, name, generation, joined_at, status)
+				VALUES (?, ?, ?, ?, ?, ?)
+			`
 
 		for _, participant := range participants {
 			_, err := tx.ExecContext(ctx, insertQuery,
@@ -519,14 +619,14 @@ func (r *MySQLEventRepository) Close() error {
 // ヘルパーメソッド群
 func (r *MySQLEventRepository) saveAllowedParticipationRoles(ctx context.Context, eventID string, roles []model.UserRole) error {
 	// 既存の役割を削除
-	_, err := r.db.ExecContext(ctx, "DELETE FROM event_allowed_roles WHERE event_id = ?", eventID)
+	_, err := r.db.ExecContext(ctx, "DELETE FROM event_participation_roles WHERE event_id = ?", eventID)
 	if err != nil {
 		return err
 	}
 
 	// 新しい役割を挿入
 	for _, role := range roles {
-		_, err := r.db.ExecContext(ctx, "INSERT INTO event_allowed_roles (event_id, role) VALUES (?, ?)", eventID, string(role))
+		_, err := r.db.ExecContext(ctx, "INSERT INTO event_participation_roles (event_id, role_name) VALUES (?, ?)", eventID, string(role))
 		if err != nil {
 			return err
 		}
@@ -536,14 +636,14 @@ func (r *MySQLEventRepository) saveAllowedParticipationRoles(ctx context.Context
 
 func (r *MySQLEventRepository) saveAllowedParticipationRolesWithTx(ctx context.Context, tx *sql.Tx, eventID string, roles []model.UserRole) error {
 	// 既存の役割を削除
-	_, err := tx.ExecContext(ctx, "DELETE FROM event_allowed_roles WHERE event_id = ?", eventID)
+	_, err := tx.ExecContext(ctx, "DELETE FROM event_participation_roles WHERE event_id = ?", eventID)
 	if err != nil {
 		return err
 	}
 
 	// 新しい役割を挿入
 	for _, role := range roles {
-		_, err := tx.ExecContext(ctx, "INSERT INTO event_allowed_roles (event_id, role) VALUES (?, ?)", eventID, string(role))
+		_, err := tx.ExecContext(ctx, "INSERT INTO event_participation_roles (event_id, role_name) VALUES (?, ?)", eventID, string(role))
 		if err != nil {
 			return err
 		}
@@ -560,7 +660,7 @@ func (r *MySQLEventRepository) saveTags(ctx context.Context, eventID string, tag
 
 	// 新しいタグを挿入
 	for _, tag := range tags {
-		_, err := r.db.ExecContext(ctx, "INSERT INTO event_tags (event_id, tag) VALUES (?, ?)", eventID, string(tag))
+		_, err := r.db.ExecContext(ctx, "INSERT INTO event_tags (event_id, tag_name) VALUES (?, ?)", eventID, string(tag))
 		if err != nil {
 			return err
 		}
@@ -577,7 +677,7 @@ func (r *MySQLEventRepository) saveTagsWithTx(ctx context.Context, tx *sql.Tx, e
 
 	// 新しいタグを挿入
 	for _, tag := range tags {
-		_, err := tx.ExecContext(ctx, "INSERT INTO event_tags (event_id, tag) VALUES (?, ?)", eventID, string(tag))
+		_, err := tx.ExecContext(ctx, "INSERT INTO event_tags (event_id, tag_name) VALUES (?, ?)", eventID, string(tag))
 		if err != nil {
 			return err
 		}
@@ -587,7 +687,7 @@ func (r *MySQLEventRepository) saveTagsWithTx(ctx context.Context, tx *sql.Tx, e
 
 func (r *MySQLEventRepository) saveFeeSettings(ctx context.Context, eventID string, feeSettings []model.FeeSetting) error {
 	// 既存の料金設定を削除
-	_, err := r.db.ExecContext(ctx, "DELETE FROM event_fee_settings WHERE event_id = ?", eventID)
+	_, err := r.db.ExecContext(ctx, "DELETE FROM fee_settings WHERE event_id = ?", eventID)
 	if err != nil {
 		return err
 	}
@@ -595,7 +695,7 @@ func (r *MySQLEventRepository) saveFeeSettings(ctx context.Context, eventID stri
 	// 新しい料金設定を挿入
 	for _, fs := range feeSettings {
 		_, err := r.db.ExecContext(ctx,
-			"INSERT INTO event_fee_settings (event_id, applicable_generation, fee_amount, fee_currency) VALUES (?, ?, ?, ?)",
+			"INSERT INTO fee_settings (event_id, applicable_generation, amount, currency) VALUES (?, ?, ?, ?)",
 			eventID, fs.ApplicableGeneration, fs.Fee.Amount, fs.Fee.Currency)
 		if err != nil {
 			return err
@@ -606,7 +706,7 @@ func (r *MySQLEventRepository) saveFeeSettings(ctx context.Context, eventID stri
 
 func (r *MySQLEventRepository) saveFeeSettingsWithTx(ctx context.Context, tx *sql.Tx, eventID string, feeSettings []model.FeeSetting) error {
 	// 既存の料金設定を削除
-	_, err := tx.ExecContext(ctx, "DELETE FROM event_fee_settings WHERE event_id = ?", eventID)
+	_, err := tx.ExecContext(ctx, "DELETE FROM fee_settings WHERE event_id = ?", eventID)
 	if err != nil {
 		return err
 	}
@@ -614,7 +714,7 @@ func (r *MySQLEventRepository) saveFeeSettingsWithTx(ctx context.Context, tx *sq
 	// 新しい料金設定を挿入
 	for _, fs := range feeSettings {
 		_, err := tx.ExecContext(ctx,
-			"INSERT INTO event_fee_settings (event_id, applicable_generation, fee_amount, fee_currency) VALUES (?, ?, ?, ?)",
+			"INSERT INTO fee_settings (event_id, applicable_generation, amount, currency) VALUES (?, ?, ?, ?)",
 			eventID, fs.ApplicableGeneration, fs.Fee.Amount, fs.Fee.Currency)
 		if err != nil {
 			return err
@@ -657,7 +757,7 @@ func (r *MySQLEventRepository) saveSchedulePollWithTx(ctx context.Context, tx *s
 
 func (r *MySQLEventRepository) saveAllowedEditRoles(ctx context.Context, eventID string, roles []model.UserRole) error {
 	// 既存の編集可能な役割を削除
-	deleteQuery := `DELETE FROM event_editable_roles WHERE event_id = ?`
+	deleteQuery := `DELETE FROM event_edit_roles WHERE event_id = ?`
 	_, err := r.db.ExecContext(ctx, deleteQuery, eventID)
 	if err != nil {
 		return fmt.Errorf("failed to delete existing editable roles: %w", err)
@@ -665,7 +765,7 @@ func (r *MySQLEventRepository) saveAllowedEditRoles(ctx context.Context, eventID
 
 	// 新しい編集可能な役割を挿入
 	if len(roles) > 0 {
-		insertQuery := `INSERT INTO event_editable_roles (event_id, role_name) VALUES (?, ?)`
+		insertQuery := `INSERT INTO event_edit_roles (event_id, role_name) VALUES (?, ?)`
 		stmt, err := r.db.PrepareContext(ctx, insertQuery)
 		if err != nil {
 			return fmt.Errorf("failed to prepare editable roles insert statement: %w", err)
@@ -685,7 +785,7 @@ func (r *MySQLEventRepository) saveAllowedEditRoles(ctx context.Context, eventID
 
 func (r *MySQLEventRepository) saveAllowedEditRolesWithTx(ctx context.Context, tx *sql.Tx, eventID string, roles []model.UserRole) error {
 	// 既存の編集可能な役割を削除
-	deleteQuery := `DELETE FROM event_editable_roles WHERE event_id = ?`
+	deleteQuery := `DELETE FROM event_edit_roles WHERE event_id = ?`
 	_, err := tx.ExecContext(ctx, deleteQuery, eventID)
 	if err != nil {
 		return fmt.Errorf("failed to delete existing editable roles: %w", err)
@@ -693,7 +793,7 @@ func (r *MySQLEventRepository) saveAllowedEditRolesWithTx(ctx context.Context, t
 
 	// 新しい編集可能な役割を挿入
 	if len(roles) > 0 {
-		insertQuery := `INSERT INTO event_editable_roles (event_id, role_name) VALUES (?, ?)`
+		insertQuery := `INSERT INTO event_edit_roles (event_id, role_name) VALUES (?, ?)`
 		stmt, err := tx.PrepareContext(ctx, insertQuery)
 		if err != nil {
 			return fmt.Errorf("failed to prepare editable roles insert statement: %w", err)
@@ -714,7 +814,7 @@ func (r *MySQLEventRepository) saveAllowedEditRolesWithTx(ctx context.Context, t
 func (r *MySQLEventRepository) loadEventRelations(ctx context.Context, event *model.Event) error {
 	// 主催者の役割を取得
 	if event.Organizer != nil {
-		rows, err := r.db.QueryContext(ctx, "SELECT role FROM user_roles WHERE user_id = ?", event.Organizer.UserID)
+		rows, err := r.db.QueryContext(ctx, "SELECT role_name FROM user_roles WHERE user_id = ?", event.Organizer.UserID)
 		if err != nil {
 			return err
 		}
@@ -730,7 +830,7 @@ func (r *MySQLEventRepository) loadEventRelations(ctx context.Context, event *mo
 	}
 
 	// 許可された役割を取得
-	rows, err := r.db.QueryContext(ctx, "SELECT role FROM event_allowed_roles WHERE event_id = ?", event.EventID)
+	rows, err := r.db.QueryContext(ctx, "SELECT role_name FROM event_participation_roles WHERE event_id = ?", event.EventID)
 	if err != nil {
 		return err
 	}
@@ -745,7 +845,7 @@ func (r *MySQLEventRepository) loadEventRelations(ctx context.Context, event *mo
 	}
 
 	// 編集可能な役割を取得
-	rows, err = r.db.QueryContext(ctx, "SELECT role_name FROM event_editable_roles WHERE event_id = ?", event.EventID)
+	rows, err = r.db.QueryContext(ctx, "SELECT role_name FROM event_edit_roles WHERE event_id = ?", event.EventID)
 	if err != nil {
 		return err
 	}
@@ -760,7 +860,7 @@ func (r *MySQLEventRepository) loadEventRelations(ctx context.Context, event *mo
 	}
 
 	// タグを取得
-	rows, err = r.db.QueryContext(ctx, "SELECT tag FROM event_tags WHERE event_id = ?", event.EventID)
+	rows, err = r.db.QueryContext(ctx, "SELECT tag_name FROM event_tags WHERE event_id = ?", event.EventID)
 	if err != nil {
 		return err
 	}
@@ -776,7 +876,7 @@ func (r *MySQLEventRepository) loadEventRelations(ctx context.Context, event *mo
 
 	// 料金設定を取得
 	rows, err = r.db.QueryContext(ctx,
-		"SELECT applicable_generation, fee_amount, fee_currency FROM event_fee_settings WHERE event_id = ?",
+		"SELECT applicable_generation, amount, currency FROM fee_settings WHERE event_id = ?",
 		event.EventID)
 	if err != nil {
 		return err

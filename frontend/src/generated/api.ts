@@ -298,21 +298,9 @@ export interface EventParticipant {
      * @memberof EventParticipant
      */
     'joined_at': string;
-    /**
-     * 参加ステータス
-     * @type {string}
-     * @memberof EventParticipant
-     */
-    'status': EventParticipantStatusEnum;
 }
 
-export const EventParticipantStatusEnum = {
-    Pending: 'PENDING',
-    Confirmed: 'CONFIRMED',
-    Cancelled: 'CANCELLED'
-} as const;
 
-export type EventParticipantStatusEnum = typeof EventParticipantStatusEnum[keyof typeof EventParticipantStatusEnum];
 
 /**
  * 

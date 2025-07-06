@@ -4,14 +4,22 @@ import { isDevelopment } from './constants';
 // 認証ヘッダーを取得する関数
 const getAuthHeaders = () => {
   if (typeof window !== 'undefined' && isDevelopment) {
+    // 開発環境: ローカルストレージから認証情報を取得
     const mockUserData = localStorage.getItem('mockUser');
     if (mockUserData) {
       const mockUser = JSON.parse(mockUserData);
-      // 開発環境ではmockユーザー情報をヘッダーに設定（ASCII文字のみ）
       return {
         'X-User-ID': mockUser.user_id,
         'X-User-Roles': mockUser.roles.join(','),
         'X-User-Generation': mockUser.generation.toString(),
+      };
+    }
+  } else {
+    // 本番環境: 実際の認証トークンやセッション情報を取得
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      return {
+        'Authorization': `Bearer ${token}`,
       };
     }
   }
@@ -45,23 +53,37 @@ class AuthenticatedApiClient extends DefaultApi {
     };
   }
 
-  // 現在のユーザー情報を取得（開発環境用）
-  async getCurrentUserInfo() {
+  // 現在のユーザー情報を取得（環境に応じて適切な方法を使用）
+  async getCurrentUser() {
     if (typeof window !== 'undefined' && isDevelopment) {
+      // 開発環境: ローカルストレージから取得
       const mockUserData = localStorage.getItem('mockUser');
       if (mockUserData) {
         const mockUser = JSON.parse(mockUserData);
+        // AxiosResponseの形式に合わせる
         return {
           data: {
             user_id: mockUser.user_id,
             name: mockUser.name,
             roles: mockUser.roles,
             generation: mockUser.generation,
-          }
+          },
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: {} as any
         };
       }
+      throw new Error('開発環境でユーザー情報が見つかりません');
+    } else {
+      // 本番環境: APIから取得
+      return super.getCurrentUser(this.getAuthenticatedConfig());
     }
-    throw new Error('ユーザーが認証されていません');
+  }
+
+  // 開発環境用のgetCurrentUserInfo（後方互換性のため残す）
+  async getCurrentUserInfo() {
+    return this.getCurrentUser();
   }
 
   // 役割一覧を取得
@@ -178,6 +200,44 @@ const createAuthenticatedApiClient = () => {
 // APIクライアントを取得する関数
 export const getApiClient = () => {
   return createAuthenticatedApiClient();
+};
+
+// 認証情報を取得するユーティリティ関数
+export const getAuthInfo = () => {
+  if (typeof window !== 'undefined' && isDevelopment) {
+    const mockUserData = localStorage.getItem('mockUser');
+    if (mockUserData) {
+      return JSON.parse(mockUserData);
+    }
+  } else {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      return { token };
+    }
+  }
+  return null;
+};
+
+// 認証情報を設定するユーティリティ関数
+export const setAuthInfo = (authData: any) => {
+  if (typeof window !== 'undefined' && isDevelopment) {
+    localStorage.setItem('mockUser', JSON.stringify(authData));
+  } else {
+    if (authData.token) {
+      localStorage.setItem('authToken', authData.token);
+    }
+  }
+};
+
+// 認証情報をクリアするユーティリティ関数
+export const clearAuthInfo = () => {
+  if (typeof window !== 'undefined') {
+    if (isDevelopment) {
+      localStorage.removeItem('mockUser');
+    } else {
+      localStorage.removeItem('authToken');
+    }
+  }
 };
 
 // APIエラーハンドリング

@@ -59,13 +59,13 @@ type EventReport struct {
 
 type Tag string
 
-// ParticipationStatus: 参加ステータス
-type ParticipationStatus string
+// EventParticipantStatus: イベント参加者のステータス
+type EventParticipantStatus string
 
 const (
-	ParticipationStatusPending   ParticipationStatus = "PENDING"
-	ParticipationStatusConfirmed ParticipationStatus = "CONFIRMED"
-	ParticipationStatusCancelled ParticipationStatus = "CANCELLED"
+	EventParticipantStatusPending   EventParticipantStatus = "PENDING"
+	EventParticipantStatusConfirmed EventParticipantStatus = "CONFIRMED"
+	EventParticipantStatusCancelled EventParticipantStatus = "CANCELLED"
 )
 
 // EventParticipant: イベント参加者
@@ -74,7 +74,7 @@ type EventParticipant struct {
 	Name       string
 	Generation int
 	JoinedAt   time.Time
-	Status     ParticipationStatus
+	Status     EventParticipantStatus
 }
 
 // TagEntity はタグ管理用のエンティティです
@@ -281,13 +281,22 @@ func (e *Event) JoinEvent(user *User) error {
 		return fmt.Errorf("user does not have required roles to join this event")
 	}
 
+	// 今日以降のイベントかどうかチェック
+	if e.ConfirmedDate != nil {
+		now := time.Now()
+		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+		if e.ConfirmedDate.Before(today) {
+			return fmt.Errorf("cannot join past events")
+		}
+	}
+
 	// 参加者を追加
 	participant := EventParticipant{
 		UserID:     user.UserID,
 		Name:       user.Name,
 		Generation: user.Generation,
 		JoinedAt:   time.Now(),
-		Status:     ParticipationStatusPending,
 	}
 	e.Participants = append(e.Participants, participant)
 	e.UpdatedAt = time.Now()

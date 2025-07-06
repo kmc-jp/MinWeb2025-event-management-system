@@ -1,16 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { EventSummary } from '../../../../generated';
+import { EventSummary, User } from '../../../../generated';
 
 interface CalendarProps {
   events: EventSummary[];
   onEventClick: (eventId: string) => void;
+  eventParticipations: {[key: string]: boolean};
+  currentUser: User | null;
 }
 
 // 週カレンダーを削除し、月カレンダーのみに変更
 
-export default function Calendar({ events, onEventClick }: CalendarProps) {
+export default function Calendar({ events, onEventClick, eventParticipations, currentUser }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const getDaysInMonth = (date: Date) => {
@@ -104,8 +106,6 @@ export default function Calendar({ events, onEventClick }: CalendarProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'DRAFT':
-        return 'bg-gray-100 text-gray-800';
       case 'SCHEDULE_POLLING':
         return 'bg-pink-100 text-pink-800';
       case 'CONFIRMED':
@@ -116,6 +116,38 @@ export default function Calendar({ events, onEventClick }: CalendarProps) {
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getEventBackgroundColor = (event: EventSummary) => {
+    // 過去のイベントかどうかをチェック
+    const isPastEvent = (event as any).confirmed_date && new Date((event as any).confirmed_date) < new Date();
+    
+    if (isPastEvent) {
+      return 'bg-blue-100 text-blue-800'; // グレーよりのブルー（過去のイベント）
+    }
+    
+    if (!currentUser) {
+      return 'bg-gray-100 text-gray-800'; // グレー（参加できない）
+    }
+    
+    // 参加可能かどうかをチェック
+    const canParticipate = (event as any).allowed_participation_roles && 
+      (event as any).allowed_participation_roles.some((role: string) => 
+        currentUser.roles && currentUser.roles.includes(role)
+      );
+    
+    if (!canParticipate) {
+      return 'bg-gray-100 text-gray-800'; // グレー（参加できない）
+    }
+    
+    // 参加登録済みかどうかをチェック
+    const isParticipant = eventParticipations[event.event_id];
+    
+    if (isParticipant) {
+      return 'bg-pink-100 text-pink-800'; // ピンク（参加登録済み）
+    } else {
+      return 'bg-yellow-100 text-yellow-800'; // イエロー（参加可能だが参加していない）
     }
   };
 
@@ -157,7 +189,7 @@ export default function Calendar({ events, onEventClick }: CalendarProps) {
                       onClick={() => onEventClick(event.event_id)}
                       className="text-xs p-1 rounded cursor-pointer hover:bg-gray-100 truncate"
                     >
-                      <div className={`px-1 py-0.5 rounded text-xs ${getStatusColor(event.status)}`}>
+                      <div className={`px-1 py-0.5 rounded text-xs ${getEventBackgroundColor(event)}`}>
                         {event.title}
                       </div>
                     </div>

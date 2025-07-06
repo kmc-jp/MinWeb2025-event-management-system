@@ -21,6 +21,7 @@ export default function EventsPage() {
   const [participationFilter, setParticipationFilter] = useState<ParticipationFilterType>('all');
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [eventParticipations, setEventParticipations] = useState<{[key: string]: boolean}>({});
   const pageSize = 50; // カレンダー表示のためにより多くのイベントを取得
 
   useEffect(() => {
@@ -63,12 +64,42 @@ export default function EventsPage() {
 
       setEvents(eventData);
       setTotalCount(response.data.total_count); // バックエンドから返された総件数を使用
+      
+      // 参加状況を取得
+      await fetchEventParticipations(eventData);
     } catch (error) {
       setError(handleApiError(error));
     } finally {
       if (showLoading) {
         setLoading(false);
       }
+    }
+  };
+
+  const fetchEventParticipations = async (eventList: EventSummary[]) => {
+    if (!currentUser) return;
+    
+    try {
+      const apiClient = getApiClient();
+      const participations: {[key: string]: boolean} = {};
+      
+      // 各イベントの参加状況を取得
+      for (const event of eventList) {
+        try {
+          const participantsResponse = await apiClient.listEventParticipants(event.event_id);
+          const isParticipant = participantsResponse.data.some((participant: any) => 
+            participant.user_id === currentUser.user_id
+          );
+          participations[event.event_id] = isParticipant;
+        } catch (error) {
+          console.error(`Failed to fetch participants for event ${event.event_id}:`, error);
+          participations[event.event_id] = false;
+        }
+      }
+      
+      setEventParticipations(participations);
+    } catch (error) {
+      console.error('Failed to fetch event participations:', error);
     }
   };
 
@@ -192,7 +223,12 @@ export default function EventsPage() {
 
         {/* イベント表示 */}
         {viewMode === 'calendar' ? (
-          <Calendar events={events} onEventClick={handleEventClick} />
+          <Calendar 
+            events={events} 
+            onEventClick={handleEventClick} 
+            eventParticipations={eventParticipations}
+            currentUser={currentUser}
+          />
         ) : events.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-kmc-gray-500 text-lg">イベントがありません</p>
@@ -204,7 +240,12 @@ export default function EventsPage() {
             </p>
           </div>
         ) : (
-          <EventList events={events} onEventClick={handleEventClick} />
+          <EventList 
+            events={events} 
+            onEventClick={handleEventClick} 
+            eventParticipations={eventParticipations}
+            currentUser={currentUser}
+          />
         )}
 
         {/* ページネーション（カレンダー表示では非表示） */}

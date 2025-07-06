@@ -40,11 +40,10 @@ type EventDetailsDTO struct {
 
 // EventParticipantDTO はイベント参加者表示用のDTO
 type EventParticipantDTO struct {
-	UserID     string                    `json:"user_id"`
-	Name       string                    `json:"name"`
-	Generation int                       `json:"generation"`
-	JoinedAt   string                    `json:"joined_at"`
-	Status     model.ParticipationStatus `json:"status"`
+	UserID     string `json:"user_id"`
+	Name       string `json:"name"`
+	Generation int    `json:"generation"`
+	JoinedAt   string `json:"joined_at"`
 }
 
 // ListEventsQuery はイベント一覧取得のクエリ
@@ -149,7 +148,6 @@ func (uc *EventQueryUsecase) GetEventParticipants(ctx context.Context, eventID s
 			Name:       participant.Name,
 			Generation: participant.Generation,
 			JoinedAt:   participant.JoinedAt.Format("2006-01-02T15:04:05Z"),
-			Status:     participant.Status,
 		}
 	}
 
