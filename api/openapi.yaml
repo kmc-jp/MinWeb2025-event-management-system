@@ -819,7 +819,7 @@ components:
         organizer_name:
           type: string
           description: 主催者名
-        allowed_roles:
+        allowed_participation_roles:
           type: array
           items:
             $ref: "#/components/schemas/UserRole"

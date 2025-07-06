@@ -32,7 +32,7 @@ type EventSummary struct {
 	OrganizerName string `json:"organizer_name"`
 
 	// 参加可能な役割
-	AllowedRoles []string `json:"allowed_roles,omitempty"`
+	AllowedParticipationRoles []string `json:"allowed_participation_roles,omitempty"`
 
 	// 確定した日程
 	ConfirmedDate time.Time `json:"confirmed_date,omitempty"`

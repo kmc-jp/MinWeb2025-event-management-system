@@ -15,8 +15,8 @@ export default function EditEventPage() {
     title: '',
     description: '',
     venue: '',
-    allowed_roles: [],
-    editable_roles: [],
+    allowed_participation_roles: [],
+    allowed_edit_roles: [],
     tags: [],
     fee_settings: []
   } as any);
@@ -39,8 +39,8 @@ export default function EditEventPage() {
         title: event.title,
         description: event.description || '',
         venue: event.venue || '',
-        allowed_roles: event.allowed_roles || [],
-        editable_roles: event.editable_roles || [],
+        allowed_participation_roles: event.allowed_participation_roles || [],
+        allowed_edit_roles: event.allowed_edit_roles || [],
         tags: event.tags || [],
         fee_settings: event.fee_settings || []
       } as any);
@@ -231,16 +231,16 @@ export default function EditEventPage() {
                         key={role}
                         type="button"
                         onClick={() => {
-                          if (!formData.allowed_roles.includes(role)) {
+                          if (!formData.allowed_participation_roles.includes(role)) {
                             setFormData(prev => ({
                               ...prev,
-                              allowed_roles: [...prev.allowed_roles, role]
+                              allowed_participation_roles: [...prev.allowed_participation_roles, role]
                             }));
                           }
                         }}
-                        disabled={formData.allowed_roles.includes(role)}
+                        disabled={formData.allowed_participation_roles.includes(role)}
                         className={`px-3 py-1 rounded-full text-sm border ${
-                          formData.allowed_roles.includes(role)
+                          formData.allowed_participation_roles.includes(role)
                             ? 'bg-kmc-500 text-white border-kmc-500'
                             : 'bg-white text-kmc-700 border-kmc-300 hover:bg-kmc-50'
                         }`}
@@ -251,13 +251,13 @@ export default function EditEventPage() {
                   </div>
                 </div>
                 
-                {formData.allowed_roles.length > 0 && (
+                {formData.allowed_participation_roles.length > 0 && (
                   <div className="mt-3">
                     <label className="block text-sm font-medium text-kmc-gray-600 mb-2">
                       選択された役割
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {formData.allowed_roles.map((role) => (
+                      {formData.allowed_participation_roles.map((role) => (
                         <span
                           key={role}
                           className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-kmc-100 text-kmc-800"
@@ -268,7 +268,7 @@ export default function EditEventPage() {
                             onClick={() => {
                               setFormData(prev => ({
                                 ...prev,
-                                allowed_roles: prev.allowed_roles.filter(r => r !== role)
+                                allowed_participation_roles: prev.allowed_participation_roles.filter(r => r !== role)
                               }));
                             }}
                             className="ml-2 text-kmc-600 hover:text-kmc-800"
@@ -296,16 +296,16 @@ export default function EditEventPage() {
                         key={role}
                         type="button"
                         onClick={() => {
-                          if (!formData.editable_roles.includes(role)) {
+                          if (!formData.allowed_edit_roles.includes(role)) {
                             setFormData(prev => ({
                               ...prev,
-                              editable_roles: [...prev.editable_roles, role]
+                              allowed_edit_roles: [...prev.allowed_edit_roles, role]
                             }));
                           }
                         }}
-                        disabled={formData.editable_roles.includes(role)}
+                        disabled={formData.allowed_edit_roles.includes(role)}
                         className={`px-3 py-1 rounded-full text-sm border ${
-                          formData.editable_roles.includes(role)
+                          formData.allowed_edit_roles.includes(role)
                             ? 'bg-kmc-500 text-white border-kmc-500'
                             : 'bg-white text-kmc-700 border-kmc-300 hover:bg-kmc-50'
                         }`}
@@ -316,13 +316,13 @@ export default function EditEventPage() {
                   </div>
                 </div>
                 
-                {formData.editable_roles.length > 0 && (
+                {formData.allowed_edit_roles.length > 0 && (
                   <div className="mt-3">
                     <label className="block text-sm font-medium text-kmc-gray-600 mb-2">
                       選択された役割
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {formData.editable_roles.map((role) => (
+                      {formData.allowed_edit_roles.map((role) => (
                         <span
                           key={role}
                           className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-kmc-100 text-kmc-800"
@@ -333,7 +333,7 @@ export default function EditEventPage() {
                             onClick={() => {
                               setFormData(prev => ({
                                 ...prev,
-                                editable_roles: prev.editable_roles.filter(r => r !== role)
+                                allowed_edit_roles: prev.allowed_edit_roles.filter(r => r !== role)
                               }));
                             }}
                             className="ml-2 text-kmc-600 hover:text-kmc-800"

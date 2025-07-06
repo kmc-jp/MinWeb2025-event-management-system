@@ -823,12 +823,12 @@ components:
     EventSummary:
       example:
         venue: venue
-        allowed_roles:
-        - null
-        - null
         event_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
         schedule_deadline: 2000-01-23T04:56:07.000+00:00
         created_at: 2000-01-23T04:56:07.000+00:00
+        allowed_participation_roles:
+        - null
+        - null
         organizer_name: organizer_name
         confirmed_date: 2000-01-23T04:56:07.000+00:00
         title: title
@@ -856,7 +856,7 @@ components:
         organizer_name:
           description: 主催者名
           type: string
-        allowed_roles:
+        allowed_participation_roles:
           description: 参加可能な役割
           items:
             $ref: '#/components/schemas/UserRole'
@@ -984,23 +984,23 @@ components:
       example:
         data:
         - venue: venue
-          allowed_roles:
-          - null
-          - null
           event_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
           schedule_deadline: 2000-01-23T04:56:07.000+00:00
           created_at: 2000-01-23T04:56:07.000+00:00
+          allowed_participation_roles:
+          - null
+          - null
           organizer_name: organizer_name
           confirmed_date: 2000-01-23T04:56:07.000+00:00
           title: title
           status: DRAFT
         - venue: venue
-          allowed_roles:
-          - null
-          - null
           event_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
           schedule_deadline: 2000-01-23T04:56:07.000+00:00
           created_at: 2000-01-23T04:56:07.000+00:00
+          allowed_participation_roles:
+          - null
+          - null
           organizer_name: organizer_name
           confirmed_date: 2000-01-23T04:56:07.000+00:00
           title: title

@@ -343,7 +343,7 @@ export interface EventSummary {
      * @type {Array<string>}
      * @memberof EventSummary
      */
-    'allowed_roles'?: Array<string>;
+    'allowed_participation_roles'?: Array<string>;
     /**
      * 確定した日程
      * @type {string}

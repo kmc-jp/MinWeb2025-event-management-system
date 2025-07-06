@@ -29,8 +29,8 @@ export default function EventDetailPage() {
       setLoading(true);
       const apiClient = getApiClient();
       const response = await apiClient.getEventDetails(eventId);
-      if (response.data && 'allowed_roles' in response.data && Array.isArray(response.data.allowed_roles)) {
-        response.data.allowed_roles = response.data.allowed_roles.filter(role => role === 'member');
+      if (response.data && 'allowed_participation_roles' in response.data && Array.isArray(response.data.allowed_participation_roles)) {
+        response.data.allowed_participation_roles = response.data.allowed_participation_roles.filter(role => role === 'member');
       }
       setEvent(response.data as EventDetails);
     } catch (error) {
@@ -95,7 +95,7 @@ export default function EventDetailPage() {
     
     // 参加可能な役割を持っているかチェック
     const userRoles = currentUser.roles || [];
-    const allowedRoles = event.allowed_roles || [];
+    const allowedRoles = event.allowed_participation_roles || [];
     
     return userRoles.some((userRole: string) => 
       allowedRoles.includes(userRole)
@@ -284,11 +284,11 @@ export default function EventDetailPage() {
                 </div>
               )}
 
-              {event.allowed_roles && event.allowed_roles.length > 0 && (
+              {event.allowed_participation_roles && event.allowed_participation_roles.length > 0 && (
                 <div className="mb-6">
                   <h3 className="text-sm font-medium text-kmc-gray-700 mb-2">参加可能な役割</h3>
                   <div className="flex flex-wrap gap-2">
-                    {event.allowed_roles.map((role) => (
+                    {event.allowed_participation_roles.map((role) => (
                       <span
                         key={role}
                         className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -312,11 +312,11 @@ export default function EventDetailPage() {
                 </div>
               )}
 
-              {event.editable_roles && event.editable_roles.length > 0 && (
+              {event.allowed_edit_roles && event.allowed_edit_roles.length > 0 && (
                 <div className="mb-6">
                   <h3 className="text-sm font-medium text-kmc-gray-700 mb-2">編集可能な役割</h3>
                   <div className="flex flex-wrap gap-2">
-                    {event.editable_roles.map((role) => (
+                    {event.allowed_edit_roles.map((role) => (
                       <span
                         key={role}
                         className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium"

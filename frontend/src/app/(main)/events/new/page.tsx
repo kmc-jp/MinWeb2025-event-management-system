@@ -7,7 +7,7 @@ import { getApiClient, handleApiError } from '../../../../lib/api';
 import { CreateEventRequest, FeeSetting, Money, Role } from '../../../../generated/api';
 
 // 日程設定を含む拡張されたCreateEventRequest型
-interface ExtendedCreateEventRequest extends Omit<CreateEventRequest, 'allowed_users' | 'allowed_roles' | 'editable_roles'> {
+interface ExtendedCreateEventRequest extends Omit<CreateEventRequest, 'allowed_users' | 'allowed_participation_roles' | 'allowed_edit_roles'> {
   allowed_participation_roles: string[];
   allowed_edit_roles: string[];
   allowed_users?: string[];

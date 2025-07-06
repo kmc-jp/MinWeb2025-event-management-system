@@ -59,7 +59,7 @@ export default function EventsPage() {
           if (participationFilter === 'joinable') {
             // 参加可能な役割を持っているかチェック（参加済みも含む）
             const userRoles = currentUser.roles || [];
-            const allowedRoles = event.allowed_roles || [];
+            const allowedRoles = event.allowed_participation_roles || [];
             const isJoinable = userRoles.some((userRole: string) => allowedRoles.includes(userRole));
             
             // 参加済みかチェック（Mock実装では一部のイベントに参加済みとする）
