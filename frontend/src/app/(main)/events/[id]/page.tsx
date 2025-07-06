@@ -104,8 +104,6 @@ export default function EventDetailPage() {
 
   const getStatusColor = (status: EventDetailsStatusEnum) => {
     switch (status) {
-      case 'DRAFT':
-        return 'bg-gray-100 text-gray-800';
       case 'SCHEDULE_POLLING':
         return 'bg-pink-100 text-pink-800';
       case 'CONFIRMED':
@@ -121,8 +119,6 @@ export default function EventDetailPage() {
 
   const getStatusText = (status: EventDetailsStatusEnum) => {
     switch (status) {
-      case 'DRAFT':
-        return '下書き';
       case 'SCHEDULE_POLLING':
         return '日程調整中';
       case 'CONFIRMED':

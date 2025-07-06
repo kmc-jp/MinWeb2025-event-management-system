@@ -163,6 +163,11 @@ class AuthenticatedApiClient extends DefaultApi {
   async leaveEvent(id: string, userId: string) {
     return super.leaveEvent(id, userId, this.getAuthenticatedConfig());
   }
+
+  // 日程確定
+  async confirmEventSchedule(id: string, confirmEventScheduleRequest: { confirmed_date: string }) {
+    return super.confirmEventSchedule(id, confirmEventScheduleRequest, this.getAuthenticatedConfig());
+  }
 }
 
 // 認証済みAPIクライアントのインスタンスを作成

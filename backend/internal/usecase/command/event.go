@@ -34,6 +34,16 @@ type UpdateEventCommand struct {
 	AllowedEditRoles          []model.UserRole
 	Tags                      []model.Tag
 	FeeSettings               []model.FeeSetting
+	PollType                  *string
+	PollCandidates            []time.Time
+	ConfirmedDate             *time.Time
+	ScheduleDeadline          *time.Time
+}
+
+// ConfirmScheduleCommand は日程確定のコマンドを表します
+type ConfirmScheduleCommand struct {
+	EventID       string
+	ConfirmedDate time.Time
 }
 
 // DeleteEventCommand はイベント削除のコマンドを表します
@@ -136,6 +146,20 @@ func (uc *EventCommandUsecase) LeaveEvent(ctx context.Context, cmd *LeaveEventCo
 	return uc.EventRepo.Save(ctx, event)
 }
 
+// ConfirmSchedule はイベントの日程を確定します
+func (uc *EventCommandUsecase) ConfirmSchedule(ctx context.Context, cmd *ConfirmScheduleCommand) error {
+	event, err := uc.EventRepo.FindByID(ctx, cmd.EventID)
+	if err != nil {
+		return err
+	}
+
+	if err := event.ConfirmSchedule(cmd.ConfirmedDate); err != nil {
+		return err
+	}
+
+	return uc.EventRepo.Save(ctx, event)
+}
+
 // 他のコマンド（Update, Publish, Cancel, FinalizeSchedule など）も同様に追加可能
 
 func (c *CreateEventCommand) ToEvent(organizer *model.User) *model.Event {
@@ -144,4 +168,7 @@ func (c *CreateEventCommand) ToEvent(organizer *model.User) *model.Event {
 
 func (c *UpdateEventCommand) ApplyTo(event *model.Event) {
 	event.UpdateDetails(c.Title, c.Description, c.Venue, c.AllowedParticipationRoles, c.AllowedEditRoles, c.Tags, c.FeeSettings)
+	if c.PollType != nil {
+		event.UpdateScheduleSettings(*c.PollType, c.PollCandidates, c.ConfirmedDate, c.ScheduleDeadline)
+	}
 }

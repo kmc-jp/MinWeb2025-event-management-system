@@ -18,13 +18,18 @@ export default function EditEventPage() {
     allowed_participation_roles: [],
     allowed_edit_roles: [],
     tags: [],
-    fee_settings: []
-  } as any);
+    fee_settings: [],
+    poll_type: undefined,
+    poll_candidates: [],
+    confirmed_date: undefined,
+    schedule_deadline: undefined
+  });
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tags, setTags] = useState<any[]>([]);
   const [newTag, setNewTag] = useState('');
+  const [currentStatus, setCurrentStatus] = useState<string>('');
   useEffect(() => {
     loadEventDetails();
     loadTags();
@@ -35,6 +40,8 @@ export default function EditEventPage() {
       const response = await (getApiClient() as any).getEventDetails(eventId);
       const event = response.data;
       
+      setCurrentStatus(event.status);
+      
       setFormData({
         title: event.title,
         description: event.description || '',
@@ -42,8 +49,12 @@ export default function EditEventPage() {
         allowed_participation_roles: event.allowed_participation_roles || [],
         allowed_edit_roles: event.allowed_edit_roles || [],
         tags: event.tags || [],
-        fee_settings: event.fee_settings || []
-      } as any);
+        fee_settings: event.fee_settings || [],
+        poll_type: event.poll_type,
+        poll_candidates: event.poll_candidates || [],
+        confirmed_date: event.confirmed_date,
+        schedule_deadline: event.schedule_deadline
+      });
     } catch (err) {
       console.error('Failed to load event details:', err);
       setError('イベントの詳細を読み込めませんでした');
@@ -139,7 +150,21 @@ export default function EditEventPage() {
 
     try {
       const apiClient = getApiClient();
-      const response = await apiClient.updateEvent(eventId, formData);
+      
+      // 日程確定済みのイベントで日程を変更した場合の処理
+      let updatedFormData = { ...formData };
+      
+      if (currentStatus === 'CONFIRMED' && formData.confirmed_date) {
+        // 日程確定済みから日程調整中に変更
+        updatedFormData = {
+          ...formData,
+          poll_type: 'SCHEDULE_POLLING',
+          poll_candidates: [formData.confirmed_date],
+          confirmed_date: undefined
+        };
+      }
+      
+      const response = await apiClient.updateEvent(eventId, updatedFormData);
       
       router.push(`/events/${eventId}`);
     } catch (error) {
@@ -506,6 +531,154 @@ export default function EditEventPage() {
                   ))}
                 </div>
               )}
+            </div>
+
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-kmc-gray-900 mb-4">日程管理</h2>
+              <div className="space-y-4">
+                {/* 現在のステータス表示 */}
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">現在のステータス</h3>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    currentStatus === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
+                    currentStatus === 'SCHEDULE_POLLING' ? 'bg-pink-100 text-pink-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {currentStatus === 'CONFIRMED' ? '日程確定済み' :
+                     currentStatus === 'SCHEDULE_POLLING' ? '日程調整中' :
+                     currentStatus}
+                  </span>
+                </div>
+
+                {/* 日程確定済みの場合 */}
+                {currentStatus === 'CONFIRMED' && (
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <h3 className="text-sm font-medium text-green-900 mb-2">日程変更</h3>
+                    <p className="text-sm text-green-700 mb-3">
+                      確定済みの日程を変更できます。変更後は日程調整中に戻ります。
+                    </p>
+                    <div>
+                      <label className="block text-sm font-medium text-green-700 mb-2">
+                        新しい日程
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={formData.confirmed_date ? formData.confirmed_date.replace('Z', '') : ''}
+                        onChange={(e) => handleInputChange('confirmed_date', e.target.value ? e.target.value + 'Z' : undefined)}
+                        className="input-field w-full"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* 日程調整中の場合 */}
+                {currentStatus === 'SCHEDULE_POLLING' && (
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h3 className="text-sm font-medium text-blue-900 mb-2">日程調整</h3>
+                    <p className="text-sm text-blue-700 mb-3">
+                      日程候補を追加・編集できます。または、候補から日程を確定できます。
+                    </p>
+                    
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-blue-700 mb-2">
+                        日程候補
+                      </label>
+                      <div className="space-y-2">
+                        {formData.poll_candidates?.map((date, index) => (
+                          <div key={index} className="flex gap-2">
+                            <input
+                              type="datetime-local"
+                              value={date.replace('Z', '')}
+                              onChange={(e) => {
+                                const newCandidates = [...(formData.poll_candidates || [])];
+                                newCandidates[index] = e.target.value + 'Z';
+                                handleInputChange('poll_candidates', newCandidates);
+                              }}
+                              className="input-field flex-1"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newCandidates = formData.poll_candidates?.filter((_, i) => i !== index) || [];
+                                handleInputChange('poll_candidates', newCandidates);
+                              }}
+                              className="btn-danger px-3"
+                            >
+                              削除
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newCandidates = [...(formData.poll_candidates || []), new Date().toISOString().slice(0, 16) + 'Z'];
+                            handleInputChange('poll_candidates', newCandidates);
+                          }}
+                          className="btn-secondary"
+                        >
+                          日程候補を追加
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-blue-700 mb-2">
+                        日程確定予定日
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={formData.schedule_deadline ? formData.schedule_deadline.replace('Z', '') : ''}
+                        onChange={(e) => handleInputChange('schedule_deadline', e.target.value ? e.target.value + 'Z' : undefined)}
+                        className="input-field w-full"
+                      />
+                    </div>
+
+                    {/* 日程確定ボタン */}
+                    {formData.poll_candidates && formData.poll_candidates.length > 0 && (
+                      <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <h3 className="text-sm font-medium text-yellow-900 mb-2">日程確定</h3>
+                        <p className="text-sm text-yellow-700 mb-3">
+                          日程候補から確定する日程を選択してください
+                        </p>
+                        <div className="space-y-2">
+                          {formData.poll_candidates.map((date, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  setLoading(true);
+                                  const apiClient = getApiClient();
+                                  await apiClient.confirmEventSchedule(eventId, { confirmed_date: date });
+                                  router.push(`/events/${eventId}`);
+                                } catch (error) {
+                                  setError(handleApiError(error));
+                                } finally {
+                                  setLoading(false);
+                                }
+                              }}
+                              className="w-full text-left p-3 border border-yellow-300 rounded-lg hover:bg-yellow-100 transition-colors"
+                            >
+                              <div className="font-medium text-yellow-900">
+                                {new Date(date).toLocaleString('ja-JP', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </div>
+                              <div className="text-sm text-yellow-600">この日程で確定する</div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+
+              </div>
             </div>
 
             <div className="flex justify-end space-x-4">

@@ -53,6 +53,15 @@ type UpdateEventRequest struct {
 	AllowedEditRoles          []model.UserRole   `json:"allowed_edit_roles"`
 	Tags                      []string           `json:"tags"`
 	FeeSettings               []model.FeeSetting `json:"fee_settings"`
+	PollType                  *string            `json:"poll_type"`
+	PollCandidates            []string           `json:"poll_candidates"`   // ISO 8601形式の日時文字列
+	ConfirmedDate             *string            `json:"confirmed_date"`    // 確定した日程（ISO 8601形式）
+	ScheduleDeadline          *string            `json:"schedule_deadline"` // 日程確定予定日（ISO 8601形式）
+}
+
+// ConfirmScheduleRequest は日程確定リクエスト
+type ConfirmScheduleRequest struct {
+	ConfirmedDate string `json:"confirmed_date" binding:"required"` // ISO 8601形式の日時文字列
 }
 
 // JoinEventRequest はイベント参加リクエスト
@@ -204,6 +213,40 @@ func (h *EventHandler) UpdateEvent(c *gin.Context) {
 		tags[i] = model.Tag(tag)
 	}
 
+	// 日程調整関連のデータを処理
+	var pollCandidates []time.Time
+	if req.PollCandidates != nil {
+		pollCandidates = make([]time.Time, len(req.PollCandidates))
+		for i, dateStr := range req.PollCandidates {
+			date, err := time.Parse(time.RFC3339, dateStr)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid poll_candidates date format"})
+				return
+			}
+			pollCandidates[i] = date
+		}
+	}
+
+	var confirmedDate *time.Time
+	if req.ConfirmedDate != nil {
+		date, err := time.Parse(time.RFC3339, *req.ConfirmedDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid confirmed_date format"})
+			return
+		}
+		confirmedDate = &date
+	}
+
+	var scheduleDeadline *time.Time
+	if req.ScheduleDeadline != nil {
+		date, err := time.Parse(time.RFC3339, *req.ScheduleDeadline)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid schedule_deadline format"})
+			return
+		}
+		scheduleDeadline = &date
+	}
+
 	cmd := &command.UpdateEventCommand{
 		EventID:                   eventID,
 		Title:                     req.Title,
@@ -213,9 +256,74 @@ func (h *EventHandler) UpdateEvent(c *gin.Context) {
 		AllowedEditRoles:          req.AllowedEditRoles,
 		Tags:                      tags,
 		FeeSettings:               req.FeeSettings,
+		PollType:                  req.PollType,
+		PollCandidates:            pollCandidates,
+		ConfirmedDate:             confirmedDate,
+		ScheduleDeadline:          scheduleDeadline,
 	}
 
 	if err := h.eventCommandUsecase.UpdateEvent(c.Request.Context(), cmd); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 更新後のイベント詳細を返す
+	updatedEvent, err := h.eventQueryUsecase.GetEventDetails(c.Request.Context(), eventID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, updatedEvent)
+}
+
+// ConfirmSchedule は日程確定エンドポイント
+func (h *EventHandler) ConfirmSchedule(c *gin.Context) {
+	eventID := c.Param("id")
+	if eventID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "event_id is required"})
+		return
+	}
+
+	var req ConfirmScheduleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 認証情報からユーザーIDを取得
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	// イベント詳細を取得
+	event, err := h.eventQueryUsecase.GetEventDetails(c.Request.Context(), eventID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+		return
+	}
+
+	// 編集権限チェック
+	if err := h.hasEditPermission(c.Request.Context(), userID, event.AllowedEditRoles); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 日時文字列をtime.Timeに変換
+	confirmedDate, err := time.Parse(time.RFC3339, req.ConfirmedDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid confirmed_date format"})
+		return
+	}
+
+	cmd := &command.ConfirmScheduleCommand{
+		EventID:       eventID,
+		ConfirmedDate: confirmedDate,
+	}
+
+	if err := h.eventCommandUsecase.ConfirmSchedule(c.Request.Context(), cmd); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -459,5 +567,8 @@ func (h *EventHandler) RegisterRoutes(r *gin.Engine) {
 		events.GET("/:id/participants", h.ListEventParticipants)
 		events.POST("/:id/participants", h.JoinEvent)
 		events.DELETE("/:id/participants/:userId", h.LeaveEvent)
+
+		// 日程確定機能のルート
+		events.POST("/:id/confirm-schedule", h.ConfirmSchedule)
 	}
 }

@@ -51,7 +51,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [DRAFT, SCHEDULE_POLLING, CONFIRMED, FINISHED, CANCELLED]
+            enum: [SCHEDULE_POLLING, CONFIRMED, FINISHED, CANCELLED]
         - name: tags
           in: query
           description: タグでフィルタ（カンマ区切り）
@@ -343,6 +343,68 @@ paths:
       responses:
         "204":
           description: イベント削除成功
+        "400":
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: 認証エラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: イベントが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/events/{id}/confirm-schedule:
+    post:
+      summary: イベントの日程を確定
+      operationId: confirmEventSchedule
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                confirmed_date:
+                  type: string
+                  format: date-time
+                  description: 確定する日程
+              required:
+                - confirmed_date
+      responses:
+        "200":
+          description: 日程確定成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetails"
         "400":
           description: バリデーションエラー
           content:
@@ -818,7 +880,7 @@ components:
           description: イベントタイトル
         status:
           type: string
-          enum: [DRAFT, SCHEDULE_POLLING, CONFIRMED, FINISHED, CANCELLED]
+          enum: [SCHEDULE_POLLING, CONFIRMED, FINISHED, CANCELLED]
           description: イベントステータス
         venue:
           type: string
@@ -870,7 +932,7 @@ components:
           description: イベントの説明
         status:
           type: string
-          enum: [DRAFT, SCHEDULE_POLLING, CONFIRMED, FINISHED, CANCELLED]
+          enum: [SCHEDULE_POLLING, CONFIRMED, FINISHED, CANCELLED]
           description: イベントステータス
         venue:
           type: string
@@ -1050,6 +1112,24 @@ components:
           items:
             $ref: "#/components/schemas/FeeSetting"
           description: 料金設定
+        poll_type:
+          type: string
+          description: 日程調整タイプ
+          enum: ["SCHEDULE_POLLING", "CONFIRMED"]
+        poll_candidates:
+          type: array
+          items:
+            type: string
+            format: date-time
+          description: 日程候補（ISO 8601形式）
+        confirmed_date:
+          type: string
+          format: date-time
+          description: 確定した日程
+        schedule_deadline:
+          type: string
+          format: date-time
+          description: 日程確定予定日
       required:
         - title
         - allowed_participation_roles

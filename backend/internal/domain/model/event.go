@@ -13,7 +13,6 @@ import (
 type EventStatus string
 
 const (
-	EventStatusDraft        EventStatus = "DRAFT"
 	EventStatusSchedulePoll EventStatus = "SCHEDULE_POLLING"
 	EventStatusConfirmed    EventStatus = "CONFIRMED"
 	EventStatusFinished     EventStatus = "FINISHED"
@@ -121,12 +120,24 @@ type Event struct {
 
 func NewEvent(organizer *User, title, description, venue string, allowedParticipationRoles, allowedEditRoles []UserRole, tags []Tag, feeSettings []FeeSetting, pollType string, pollCandidates []time.Time, confirmedDate *time.Time, scheduleDeadline *time.Time) *Event {
 	now := time.Now()
+
+	// 日程設定に基づいてステータスを決定
+	var status EventStatus
+	if confirmedDate != nil {
+		status = EventStatusConfirmed
+	} else if pollType != "" && len(pollCandidates) > 0 {
+		status = EventStatusSchedulePoll
+	} else {
+		// デフォルトは日程調整中
+		status = EventStatusSchedulePoll
+	}
+
 	return &Event{
 		EventID:                   uuid.New().String(),
 		Organizer:                 organizer,
 		Title:                     title,
 		Description:               description,
-		Status:                    EventStatusDraft,
+		Status:                    status,
 		AllowedParticipationRoles: allowedParticipationRoles,
 		AllowedEditRoles:          allowedEditRoles,
 		Tags:                      tags,
@@ -158,17 +169,46 @@ func (e *Event) UpdateDetails(title, description, venue string, allowedParticipa
 	e.UpdatedAt = time.Now()
 }
 
+func (e *Event) UpdateScheduleSettings(pollType string, pollCandidates []time.Time, confirmedDate *time.Time, scheduleDeadline *time.Time) {
+	if e.SchedulePoll == nil {
+		e.SchedulePoll = &SchedulePoll{
+			PollType:       pollType,
+			CandidateDates: pollCandidates,
+			Responses:      make(map[string][]time.Time),
+		}
+	} else {
+		e.SchedulePoll.PollType = pollType
+		e.SchedulePoll.CandidateDates = pollCandidates
+	}
+	e.ConfirmedDate = confirmedDate
+	e.ScheduleDeadline = scheduleDeadline
+
+	// 日程設定に基づいてステータスを更新
+	if confirmedDate != nil {
+		e.Status = EventStatusConfirmed
+	} else if pollType != "" && len(pollCandidates) > 0 {
+		e.Status = EventStatusSchedulePoll
+	} else {
+		// デフォルトは日程調整中
+		e.Status = EventStatusSchedulePoll
+	}
+
+	e.UpdatedAt = time.Now()
+}
+
 func (e *Event) StartSchedulePolling() {
 	e.Status = EventStatusSchedulePoll
 	e.UpdatedAt = time.Now()
 }
 
-func (e *Event) ConfirmSchedule(finalDate time.Time) {
+func (e *Event) ConfirmSchedule(finalDate time.Time) error {
 	if e.SchedulePoll != nil {
 		e.SchedulePoll.FinalizedDate = &finalDate
 	}
+	e.ConfirmedDate = &finalDate
 	e.Status = EventStatusConfirmed
 	e.UpdatedAt = time.Now()
+	return nil
 }
 
 func (e *Event) Publish() {
