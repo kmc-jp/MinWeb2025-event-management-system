@@ -7,6 +7,7 @@ import (
 	"event-management-system/backend/internal/usecase/command"
 	"event-management-system/backend/internal/usecase/query"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -271,10 +272,11 @@ func (h *EventHandler) DeleteEvent(c *gin.Context) {
 
 // ListEventsRequest はイベント一覧取得リクエスト
 type ListEventsRequest struct {
-	Page     int    `form:"page" binding:"min=1"`
-	PageSize int    `form:"page_size" binding:"min=1,max=100"`
-	Status   string `form:"status"`
-	Tags     string `form:"tags"` // カンマ区切り
+	Page          int    `form:"page" binding:"min=1"`
+	PageSize      int    `form:"page_size" binding:"min=1,max=100"`
+	Status        string `form:"status"`
+	Tags          string `form:"tags"`          // カンマ区切り
+	Participation string `form:"participation"` // "all", "joinable", "joined"
 }
 
 // ListEvents はイベント一覧取得エンドポイント
@@ -293,9 +295,13 @@ func (h *EventHandler) ListEvents(c *gin.Context) {
 		req.PageSize = 20
 	}
 
+	// 認証情報からユーザーIDを取得
+	userID := c.GetString("user_id")
+
 	query := &query.ListEventsQuery{
 		Page:     req.Page,
 		PageSize: req.PageSize,
+		UserID:   userID,
 	}
 
 	// ステータスフィルタ
@@ -307,7 +313,17 @@ func (h *EventHandler) ListEvents(c *gin.Context) {
 	// タグフィルタ
 	if req.Tags != "" {
 		// カンマ区切りのタグを解析
-		// 実際の実装ではより詳細な解析が必要
+		tagNames := strings.Split(req.Tags, ",")
+		tags := make([]model.Tag, len(tagNames))
+		for i, tagName := range tagNames {
+			tags[i] = model.Tag(strings.TrimSpace(tagName))
+		}
+		query.TagFilter = tags
+	}
+
+	// 参加状況フィルタ
+	if req.Participation != "" {
+		query.ParticipationFilter = req.Participation
 	}
 
 	result, err := h.eventQueryUsecase.ListEvents(c.Request.Context(), query)

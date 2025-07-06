@@ -76,6 +76,18 @@ export default function EventList({ events, onEventClick }: EventListProps) {
                   <span>会場: {event.venue}</span>
                 )}
               </div>
+              {event.tags && event.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {event.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-kmc-100 text-kmc-800"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
             <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
               {getStatusText(event.status)}

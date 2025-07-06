@@ -67,6 +67,18 @@ paths:
         schema:
           type: string
         style: form
+      - description: 参加状況でフィルタ
+        explode: true
+        in: query
+        name: participation
+        required: false
+        schema:
+          enum:
+          - all
+          - joinable
+          - joined
+          type: string
+        style: form
       responses:
         "200":
           content:
@@ -833,6 +845,9 @@ components:
         confirmed_date: 2000-01-23T04:56:07.000+00:00
         title: title
         status: DRAFT
+        tags:
+        - tags
+        - tags
       properties:
         event_id:
           description: イベントID
@@ -860,6 +875,11 @@ components:
           description: 参加可能な役割
           items:
             $ref: '#/components/schemas/UserRole'
+          type: array
+        tags:
+          description: タグ
+          items:
+            type: string
           type: array
         confirmed_date:
           description: 確定した日程
@@ -994,6 +1014,9 @@ components:
           confirmed_date: 2000-01-23T04:56:07.000+00:00
           title: title
           status: DRAFT
+          tags:
+          - tags
+          - tags
         - venue: venue
           event_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
           schedule_deadline: 2000-01-23T04:56:07.000+00:00
@@ -1005,6 +1028,9 @@ components:
           confirmed_date: 2000-01-23T04:56:07.000+00:00
           title: title
           status: DRAFT
+          tags:
+          - tags
+          - tags
         total_count: 0
         page: 6
         page_size: 1

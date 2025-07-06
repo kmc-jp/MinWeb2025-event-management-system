@@ -58,6 +58,13 @@ paths:
           required: false
           schema:
             type: string
+        - name: participation
+          in: query
+          description: 参加状況でフィルタ
+          required: false
+          schema:
+            type: string
+            enum: [all, joinable, joined]
       responses:
         "200":
           description: 成功
@@ -824,6 +831,11 @@ components:
           items:
             $ref: "#/components/schemas/UserRole"
           description: 参加可能な役割
+        tags:
+          type: array
+          items:
+            type: string
+          description: タグ
         confirmed_date:
           type: string
           format: date-time

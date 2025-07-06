@@ -345,6 +345,12 @@ export interface EventSummary {
      */
     'allowed_participation_roles'?: Array<string>;
     /**
+     * タグ
+     * @type {Array<string>}
+     * @memberof EventSummary
+     */
+    'tags'?: Array<string>;
+    /**
      * 確定した日程
      * @type {string}
      * @memberof EventSummary
@@ -1205,10 +1211,11 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
          * @param {number} [pageSize] 1ページあたりの件数
          * @param {'DRAFT' | 'SCHEDULE_POLLING' | 'CONFIRMED' | 'FINISHED' | 'CANCELLED'} [status] イベントステータスでフィルタ
          * @param {string} [tags] タグでフィルタ（カンマ区切り）
+         * @param {'all' | 'joinable' | 'joined'} [participation] 参加状況でフィルタ
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        listEvents: async (page?: number, pageSize?: number, status?: 'DRAFT' | 'SCHEDULE_POLLING' | 'CONFIRMED' | 'FINISHED' | 'CANCELLED', tags?: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        listEvents: async (page?: number, pageSize?: number, status?: 'DRAFT' | 'SCHEDULE_POLLING' | 'CONFIRMED' | 'FINISHED' | 'CANCELLED', tags?: string, participation?: 'all' | 'joinable' | 'joined', options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/api/events`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -1235,6 +1242,10 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
 
             if (tags !== undefined) {
                 localVarQueryParameter['tags'] = tags;
+            }
+
+            if (participation !== undefined) {
+                localVarQueryParameter['participation'] = participation;
             }
 
 
@@ -1641,11 +1652,12 @@ export const DefaultApiFp = function(configuration?: Configuration) {
          * @param {number} [pageSize] 1ページあたりの件数
          * @param {'DRAFT' | 'SCHEDULE_POLLING' | 'CONFIRMED' | 'FINISHED' | 'CANCELLED'} [status] イベントステータスでフィルタ
          * @param {string} [tags] タグでフィルタ（カンマ区切り）
+         * @param {'all' | 'joinable' | 'joined'} [participation] 参加状況でフィルタ
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async listEvents(page?: number, pageSize?: number, status?: 'DRAFT' | 'SCHEDULE_POLLING' | 'CONFIRMED' | 'FINISHED' | 'CANCELLED', tags?: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PaginatedEventList>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.listEvents(page, pageSize, status, tags, options);
+        async listEvents(page?: number, pageSize?: number, status?: 'DRAFT' | 'SCHEDULE_POLLING' | 'CONFIRMED' | 'FINISHED' | 'CANCELLED', tags?: string, participation?: 'all' | 'joinable' | 'joined', options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PaginatedEventList>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.listEvents(page, pageSize, status, tags, participation, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -1874,11 +1886,12 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
          * @param {number} [pageSize] 1ページあたりの件数
          * @param {'DRAFT' | 'SCHEDULE_POLLING' | 'CONFIRMED' | 'FINISHED' | 'CANCELLED'} [status] イベントステータスでフィルタ
          * @param {string} [tags] タグでフィルタ（カンマ区切り）
+         * @param {'all' | 'joinable' | 'joined'} [participation] 参加状況でフィルタ
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        listEvents(page?: number, pageSize?: number, status?: 'DRAFT' | 'SCHEDULE_POLLING' | 'CONFIRMED' | 'FINISHED' | 'CANCELLED', tags?: string, options?: any): AxiosPromise<PaginatedEventList> {
-            return localVarFp.listEvents(page, pageSize, status, tags, options).then((request) => request(axios, basePath));
+        listEvents(page?: number, pageSize?: number, status?: 'DRAFT' | 'SCHEDULE_POLLING' | 'CONFIRMED' | 'FINISHED' | 'CANCELLED', tags?: string, participation?: 'all' | 'joinable' | 'joined', options?: any): AxiosPromise<PaginatedEventList> {
+            return localVarFp.listEvents(page, pageSize, status, tags, participation, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -2099,11 +2112,12 @@ export interface DefaultApiInterface {
      * @param {number} [pageSize] 1ページあたりの件数
      * @param {'DRAFT' | 'SCHEDULE_POLLING' | 'CONFIRMED' | 'FINISHED' | 'CANCELLED'} [status] イベントステータスでフィルタ
      * @param {string} [tags] タグでフィルタ（カンマ区切り）
+     * @param {'all' | 'joinable' | 'joined'} [participation] 参加状況でフィルタ
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof DefaultApiInterface
      */
-    listEvents(page?: number, pageSize?: number, status?: 'DRAFT' | 'SCHEDULE_POLLING' | 'CONFIRMED' | 'FINISHED' | 'CANCELLED', tags?: string, options?: AxiosRequestConfig): AxiosPromise<PaginatedEventList>;
+    listEvents(page?: number, pageSize?: number, status?: 'DRAFT' | 'SCHEDULE_POLLING' | 'CONFIRMED' | 'FINISHED' | 'CANCELLED', tags?: string, participation?: 'all' | 'joinable' | 'joined', options?: AxiosRequestConfig): AxiosPromise<PaginatedEventList>;
 
     /**
      * 
@@ -2352,12 +2366,13 @@ export class DefaultApi extends BaseAPI implements DefaultApiInterface {
      * @param {number} [pageSize] 1ページあたりの件数
      * @param {'DRAFT' | 'SCHEDULE_POLLING' | 'CONFIRMED' | 'FINISHED' | 'CANCELLED'} [status] イベントステータスでフィルタ
      * @param {string} [tags] タグでフィルタ（カンマ区切り）
+     * @param {'all' | 'joinable' | 'joined'} [participation] 参加状況でフィルタ
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof DefaultApi
      */
-    public listEvents(page?: number, pageSize?: number, status?: 'DRAFT' | 'SCHEDULE_POLLING' | 'CONFIRMED' | 'FINISHED' | 'CANCELLED', tags?: string, options?: AxiosRequestConfig) {
-        return DefaultApiFp(this.configuration).listEvents(page, pageSize, status, tags, options).then((request) => request(this.axios, this.basePath));
+    public listEvents(page?: number, pageSize?: number, status?: 'DRAFT' | 'SCHEDULE_POLLING' | 'CONFIRMED' | 'FINISHED' | 'CANCELLED', tags?: string, participation?: 'all' | 'joinable' | 'joined', options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).listEvents(page, pageSize, status, tags, participation, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

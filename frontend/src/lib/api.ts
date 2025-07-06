@@ -140,8 +140,8 @@ class AuthenticatedApiClient extends DefaultApi {
   }
 
   // イベント一覧を取得
-  async listEvents(page?: number, pageSize?: number, status?: string, tags?: string) {
-    return super.listEvents(page, pageSize, status as any, tags, this.getAuthenticatedConfig());
+  async listEvents(page?: number, pageSize?: number, status?: string, tags?: string, participation?: 'all' | 'joinable' | 'joined') {
+    return super.listEvents(page, pageSize, status as any, tags, participation, this.getAuthenticatedConfig());
   }
 
   // ヘルスチェック

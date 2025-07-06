@@ -14,6 +14,7 @@ type EventSummaryDTO struct {
 	Venue                     string            `json:"venue"`
 	Organizer                 string            `json:"organizer_name"`
 	AllowedParticipationRoles []model.UserRole  `json:"allowed_participation_roles"`
+	Tags                      []model.Tag       `json:"tags"`
 	ConfirmedDate             *string           `json:"confirmed_date,omitempty"`
 	ScheduleDeadline          *string           `json:"schedule_deadline,omitempty"`
 	CreatedAt                 string            `json:"created_at"`
@@ -48,10 +49,12 @@ type EventParticipantDTO struct {
 
 // ListEventsQuery はイベント一覧取得のクエリ
 type ListEventsQuery struct {
-	Page         int
-	PageSize     int
-	StatusFilter *model.EventStatus
-	TagFilter    []model.Tag
+	Page                int
+	PageSize            int
+	StatusFilter        *model.EventStatus
+	TagFilter           []model.Tag
+	ParticipationFilter string // "all", "joinable", "joined"
+	UserID              string // 参加状況フィルタ用のユーザーID
 }
 
 // PaginatedResult はページネーション結果
@@ -65,11 +68,12 @@ type PaginatedResult[T any] struct {
 // EventQueryUsecase はイベントクエリのユースケース
 type EventQueryUsecase struct {
 	EventRepo repository_interface.EventRepository
+	UserRepo  repository_interface.UserRepository
 }
 
 // NewEventQueryUsecase は新しいイベントクエリユースケースを作成
-func NewEventQueryUsecase(er repository_interface.EventRepository) *EventQueryUsecase {
-	return &EventQueryUsecase{EventRepo: er}
+func NewEventQueryUsecase(er repository_interface.EventRepository, ur repository_interface.UserRepository) *EventQueryUsecase {
+	return &EventQueryUsecase{EventRepo: er, UserRepo: ur}
 }
 
 // ListEvents はイベント一覧を取得
@@ -80,7 +84,7 @@ func (uc *EventQueryUsecase) ListEvents(ctx context.Context, query *ListEventsQu
 	}
 
 	// フィルタリング
-	filteredEvents := uc.filterEvents(events, query.StatusFilter, query.TagFilter)
+	filteredEvents := uc.filterEvents(events, query.StatusFilter, query.TagFilter, query.ParticipationFilter, query.UserID)
 
 	// ページネーション
 	start := (query.Page - 1) * query.PageSize
@@ -116,6 +120,7 @@ func (uc *EventQueryUsecase) ListEvents(ctx context.Context, query *ListEventsQu
 			Venue:                     event.Venue,
 			Organizer:                 event.Organizer.Name,
 			AllowedParticipationRoles: event.AllowedParticipationRoles,
+			Tags:                      event.Tags,
 			ConfirmedDate:             confirmedDate,
 			ScheduleDeadline:          scheduleDeadline,
 			CreatedAt:                 event.CreatedAt.Format("2006-01-02T15:04:05Z"),
@@ -189,7 +194,7 @@ func (uc *EventQueryUsecase) GetEventDetails(ctx context.Context, eventID string
 }
 
 // filterEvents はイベントをフィルタリング
-func (uc *EventQueryUsecase) filterEvents(events []*model.Event, statusFilter *model.EventStatus, tagFilter []model.Tag) []*model.Event {
+func (uc *EventQueryUsecase) filterEvents(events []*model.Event, statusFilter *model.EventStatus, tagFilter []model.Tag, participationFilter string, userID string) []*model.Event {
 	var filtered []*model.Event
 
 	for _, event := range events {
@@ -214,6 +219,50 @@ func (uc *EventQueryUsecase) filterEvents(events []*model.Event, statusFilter *m
 			}
 			if !hasTag {
 				continue
+			}
+		}
+
+		// 参加状況フィルタ
+		if participationFilter != "" && participationFilter != "all" && userID != "" {
+			// ユーザー情報を取得
+			user, err := uc.UserRepo.FindByID(context.Background(), userID)
+			if err != nil {
+				continue // ユーザーが見つからない場合はスキップ
+			}
+
+			if participationFilter == "joinable" {
+				// 参加可能な役割を持っているかチェック
+				hasJoinableRole := false
+				for _, userRole := range user.Roles {
+					for _, allowedRole := range event.AllowedParticipationRoles {
+						if userRole == allowedRole {
+							hasJoinableRole = true
+							break
+						}
+					}
+					if hasJoinableRole {
+						break
+					}
+				}
+				if !hasJoinableRole {
+					continue
+				}
+			} else if participationFilter == "joined" {
+				// 参加済みかチェック
+				participants, err := uc.EventRepo.GetEventParticipants(context.Background(), event.EventID)
+				if err != nil {
+					continue
+				}
+				isJoined := false
+				for _, participant := range participants {
+					if participant.UserID == userID {
+						isJoined = true
+						break
+					}
+				}
+				if !isJoined {
+					continue
+				}
 			}
 		}
 

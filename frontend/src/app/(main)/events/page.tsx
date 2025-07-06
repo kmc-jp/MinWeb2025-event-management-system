@@ -29,7 +29,12 @@ export default function EventsPage() {
 
   useEffect(() => {
     fetchEvents();
-  }, [currentPage, selectedTags, participationFilter]);
+  }, [currentPage]);
+
+  // フィルター変更時はローディング表示なしでデータを取得
+  useEffect(() => {
+    fetchEvents(false);
+  }, [selectedTags, participationFilter]);
 
   const fetchCurrentUser = async () => {
     try {
@@ -41,48 +46,29 @@ export default function EventsPage() {
     }
   };
 
-  const fetchEvents = async () => {
+  const fetchEvents = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       setError(null);
       const apiClient = getApiClient();
       const tagsParam = selectedTags.length > 0 ? selectedTags.join(',') : undefined;
-      const response = await apiClient.listEvents(currentPage, pageSize, undefined, tagsParam);
+      const participationParam = participationFilter !== 'all' ? participationFilter : undefined;
+      const response = await apiClient.listEvents(currentPage, pageSize, undefined, tagsParam, participationParam);
       let eventData = response.data.data.map((event: any) => ({
         ...event,
         schedule_deadline: event.schedule_deadline ?? undefined,
       })) as EventSummary[];
 
-      // 参加状況フィルターをフロントエンドで適用
-      if (participationFilter !== 'all' && currentUser) {
-        eventData = eventData.filter((event: EventSummary) => {
-          if (participationFilter === 'joinable') {
-            // 参加可能な役割を持っているかチェック（参加済みも含む）
-            const userRoles = currentUser.roles || [];
-            const allowedRoles = event.allowed_participation_roles || [];
-            const isJoinable = userRoles.some((userRole: string) => allowedRoles.includes(userRole));
-            
-            // 参加済みかチェック（Mock実装では一部のイベントに参加済みとする）
-            const joinedEventIds = ['mock-event-1', 'mock-event-2', 'mock-event-4']; // Mock: 複数のイベントに参加済み
-            const isJoined = joinedEventIds.includes(event.event_id);
-            
-            // 参加可能または参加済みの場合に表示
-            return isJoinable || isJoined;
-          } else if (participationFilter === 'joined') {
-            // 参加済みかチェック（Mock実装では一部のイベントに参加済みとする）
-            const joinedEventIds = ['mock-event-1', 'mock-event-2', 'mock-event-4']; // Mock: 複数のイベントに参加済み
-            return joinedEventIds.includes(event.event_id);
-          }
-          return true;
-        });
-      }
-
       setEvents(eventData);
-      setTotalCount(eventData.length); // フィルター適用後の件数
+      setTotalCount(response.data.total_count); // バックエンドから返された総件数を使用
     } catch (error) {
       setError(handleApiError(error));
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -148,11 +134,11 @@ export default function EventsPage() {
         {/* フィルターと表示モード */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <TagFilter selectedTags={selectedTags} onTagsChange={handleTagsChange} />
             <ParticipationFilter 
               selectedFilter={participationFilter} 
               onFilterChange={handleParticipationFilterChange} 
             />
+            <TagFilter selectedTags={selectedTags} onTagsChange={handleTagsChange} />
             {selectedTags.length > 0 && (
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-500">選択中:</span>

@@ -34,6 +34,9 @@ type EventSummary struct {
 	// 参加可能な役割
 	AllowedParticipationRoles []string `json:"allowed_participation_roles,omitempty"`
 
+	// タグ
+	Tags []string `json:"tags,omitempty"`
+
 	// 確定した日程
 	ConfirmedDate time.Time `json:"confirmed_date,omitempty"`
 

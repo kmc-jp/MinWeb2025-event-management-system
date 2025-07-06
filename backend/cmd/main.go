@@ -59,7 +59,7 @@ func main() {
 
 	// ユースケース層の初期化
 	eventCommandUsecase := command.NewEventCommandUsecase(eventRepo, userRepo)
-	eventQueryUsecase := query.NewEventQueryUsecase(eventRepo)
+	eventQueryUsecase := query.NewEventQueryUsecase(eventRepo, userRepo)
 	userQueryUsecase := query.NewUserQueryUsecase(userRepo)
 	roleCommandUsecase := command.NewRoleCommandUsecase(roleRepo, userRepo)
 	roleQueryUsecase := query.NewRoleQueryUsecase(roleRepo)
